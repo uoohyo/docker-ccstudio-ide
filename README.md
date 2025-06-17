@@ -25,10 +25,10 @@ Run the pulled image. By default, the image is configured with the latest versio
 You can modify environment variables when running the [`uoohyo/ccstudio-ide`](https://hub.docker.com/r/uoohyo/ccstudio-ide) image to specify the version and development tools configuration of Code Composer Studio to be installed. Here is how you can customize it:
 
     docker run -it \
-    -e MAJOR_VER=12 \
-    -e MINOR_VER=7 \
+    -e MAJOR_VER=20 \
+    -e MINOR_VER=2 \
     -e PATCH_VER=0 \
-    -e BUILD_VER=00007 \
+    -e BUILD_VER=00012 \
     -e COMPONENTS=PF_C28 \
     uoohyo/ccstudio-ide:latest
 
@@ -38,12 +38,12 @@ The structure of the [Code Composer Studio](https://www.ti.com/tool/CCSTUDIO) ve
 
     <MAJOR_VER> . <MINOR_VER> . <PATCH_VER> . <BUILD_VER>
 
-As of April 24, 2024, the latest released version of [Code Composer Studio](https://www.ti.com/tool/CCSTUDIO) is `12.7.0.00007`. The default environment variables are set accordingly
+As of June 17, 2025, the latest released version of [Code Composer Studio](https://www.ti.com/tool/CCSTUDIO) is `20.2.0.00012`. The default environment variables are set accordingly
 
-    ENV MAJOR_VER=12
-    ENV MINOR_VER=7
+    ENV MAJOR_VER=20
+    ENV MINOR_VER=2
     ENV PATCH_VER=0
-    ENV BUILD_VER=00007
+    ENV BUILD_VER=00012
 
 For the latest version information, visit [this link](https://www.ti.com/tool/download/CCSTUDIO).
 
