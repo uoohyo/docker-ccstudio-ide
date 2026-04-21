@@ -33,6 +33,14 @@ RUN echo ">>> Installing system dependencies..." && \
     libxtst6 \
     libxrender1 \
     libusb-1.0-0-dev \
+    libgconf-2-4 \
+    libncurses5 \
+    libtinfo5 \
+    libusb-0.1-4 \
+    libdbus-glib-1-2 \
+    libgtk2.0-0 \
+    libxt6 \
+    libcanberra0 \
     ca-certificates \
     build-essential \
     unzip \
