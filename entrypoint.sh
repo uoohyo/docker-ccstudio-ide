@@ -41,8 +41,22 @@ echo "Components : ${COMPONENTS}"
 echo ""
 
 # Create temporary directory for installation
+INSTALL_LOG="/tmp/ccs_install.log"
 mkdir -p /ccs_install
 cd /ccs_install
+
+_show_install_logs() {
+    echo ""
+    echo "=== Installer Output ==="
+    cat "${INSTALL_LOG}" 2>/dev/null || echo "(no output captured)"
+    echo ""
+    echo "=== TI Installer Logs ==="
+    find /root/.ti /tmp /opt/ti -name "*.log" 2>/dev/null | while read -r f; do
+        echo "--- ${f} ---"
+        cat "${f}"
+    done
+    echo "========================"
+}
 
 # Download and Install CCS
 echo ">>> Downloading CCS ${VER}..."
@@ -62,7 +76,7 @@ if [ "${MAJOR_VER}" -ge 20 ]; then
     echo ">>> Installing CCS ${VER} (this may take a while)..."
     cd "CCS_${VER}_linux"
     chmod +x "ccs_setup_${VER}.run"
-    "./ccs_setup_${VER}.run" --mode unattended --enable-components "${COMPONENTS}" --prefix /opt/ti
+    "./ccs_setup_${VER}.run" --mode unattended --enable-components "${COMPONENTS}" --prefix /opt/ti 2>&1 | tee "${INSTALL_LOG}"
 else
     wget --timeout=300 --tries=3 "${CCS_URL}${MAJOR_VER}.${MINOR_VER}.${PATCH_VER}/CCS${VER}_linux-x64.tar.gz"
     echo ">>> Extracting..."
@@ -71,15 +85,23 @@ else
     echo ">>> Installing CCS ${VER} (this may take a while)..."
     "./CCS${VER}_linux-x64/ccs_setup_${VER}.run" \
         --mode unattended --enable-components "${COMPONENTS}" --prefix /opt/ti \
-        --install-BlackHawk false --install-Segger false
+        --install-BlackHawk false --install-Segger false 2>&1 | tee "${INSTALL_LOG}"
 fi
 
 # Verify Installation
 echo ">>> Verifying CCS installation..."
 if [ "${MAJOR_VER}" -ge 20 ]; then
-    test -x "${CCS_ECLIPSE_DIR}/ccs-server-cli.sh" || { echo "[ERROR] CCS installation failed: ccs-server-cli.sh not found"; exit 1; }
+    if ! test -x "${CCS_ECLIPSE_DIR}/ccs-server-cli.sh"; then
+        echo "[ERROR] CCS installation failed: ccs-server-cli.sh not found"
+        _show_install_logs
+        exit 1
+    fi
 else
-    test -x "${CCS_ECLIPSE_DIR}/eclipsec" || { echo "[ERROR] CCS installation failed: eclipsec not found"; exit 1; }
+    if ! test -x "${CCS_ECLIPSE_DIR}/eclipsec"; then
+        echo "[ERROR] CCS installation failed: eclipsec not found"
+        _show_install_logs
+        exit 1
+    fi
 fi
 echo ">>> CCS ${VER} installation complete."
 
