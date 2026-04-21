@@ -55,6 +55,8 @@ For the latest version information, visit [this link](https://www.ti.com/tool/do
 
 #### Components
 
+Component selection via the `COMPONENTS` variable is supported on **CCS v9.2.0 and above**. For CCS v9.1 and below, the `COMPONENTS` variable is ignored and all product families are installed.
+
 When installing [Code Composer Studio](https://www.ti.com/tool/CCSTUDIO), you can choose from various [Texas Instruments Inc.](https://www.ti.com/) product families. Below is a list of installable product families:
 
 |Product family     |Description                                                                    |
@@ -80,6 +82,8 @@ When installing [Code Composer Studio](https://www.ti.com/tool/CCSTUDIO), you ca
 |PF_MMWAVE          |mmWave Sensors                                                                 |
 |PF_C64MC           |C64x multicore DSP                                                             |
 |PF_DIGITAL_POWER   |UCD Digital Power Controllers                                                  |
+
+> **Note:** For CCS v9.1 and below, the installer does not support component selection. All product families will be installed regardless of the `COMPONENTS` value, which will result in a larger installation size.
 
 Multiple product families can be installed by separating their names with a comma in the `COMPONENTS` variable. Here is an example that installs development tools for both PF_MSP430 and PF_CC2X:
 
