@@ -47,6 +47,7 @@ WORKDIR /home
 ENV PATH="/opt/ti/ccs/eclipse/:${PATH}"
 
 # Entrypoint
-COPY --chmod=755 entrypoint.sh /entrypoint.sh
+COPY entrypoint.sh /entrypoint.sh
+RUN sed -i 's/\r//' /entrypoint.sh && chmod 755 /entrypoint.sh
 ENTRYPOINT ["/entrypoint.sh"]
 CMD ["bash"]
