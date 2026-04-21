@@ -31,10 +31,10 @@ fi
 export PATH="${CCS_ECLIPSE_DIR}:${PATH}"
 
 # Download and Install CCS
-# v20+: zip package, CCS_ prefix, URL path: MAJOR.MINOR.PATCH
-# v12-: tar.gz package, CCS prefix, URL path: MAJOR.MINOR.PATCH (v12) or MAJOR.MINOR.PATCH.BUILD (v11-)
-# v10+: installer binary is ccs_setup_<VER>.run
-# v9-:  installer binary is ccs_setup_linux64_<VER>.bin
+# v20+:  zip package, CCS_ prefix, URL path: MAJOR.MINOR.PATCH
+# v12-:  tar.gz package, CCS prefix, URL path: MAJOR.MINOR.PATCH (v12) or MAJOR.MINOR.PATCH.BUILD (v11-)
+# v9.2+: installer binary is ccs_setup_<VER>.run, supports --enable-components (PF_* IDs)
+# v9.1-: installer binary is ccs_setup_linux64_<VER>.bin, --enable-components not supported
 # v20+: udev stubs required — BlackHawk installer calls udev/kernel commands unavailable in Docker
 #       Ref: https://e2e.ti.com/support/tools/code-composer-studio-group/ccs/f/code-composer-studio-forum/1532443
 echo "=== CCS Installation ==="
@@ -91,14 +91,16 @@ else
     tar -zxf "CCS${VER}_linux-x64.tar.gz"
     chmod -R 755 "CCS${VER}_linux-x64"
     echo ">>> Installing CCS ${VER} (this may take a while)..."
-    # v10+: ccs_setup_<VER>.run; v9 and below: ccs_setup_linux64_<VER>.bin
-    if [ "${MAJOR_VER}" -ge 10 ]; then
+    # v9.2+: new installer (.run, supports --enable-components with PF_* IDs)
+    # v9.1-: old BitRock installer (linux64_*.bin, --enable-components not supported)
+    if [ "${MAJOR_VER}" -ge 10 ] || ([ "${MAJOR_VER}" -eq 9 ] && [ "${MINOR_VER}" -ge 2 ]); then
         "./CCS${VER}_linux-x64/ccs_setup_${VER}.run" \
             --mode unattended --enable-components "${COMPONENTS}" --prefix /opt/ti \
             --install-BlackHawk false --install-Segger false 2>&1 | tee "${INSTALL_LOG}"
     else
+        echo ">>> Note: --enable-components is not supported for CCS v9.1 and below. Installing all components."
         "./CCS${VER}_linux-x64/ccs_setup_linux64_${VER}.bin" \
-            --mode unattended --enable-components "${COMPONENTS}" --prefix /opt/ti \
+            --mode unattended --prefix /opt/ti \
             --install-BlackHawk false --install-Segger false 2>&1 | tee "${INSTALL_LOG}"
     fi
 fi
