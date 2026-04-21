@@ -25,6 +25,14 @@ RUN echo ">>> Installing system dependencies..." && \
     libtinfo5:i386 \
     libpython2.7 \
     libudev1 \
+    libasound2 \
+    libatk1.0-0 \
+    libcairo2 \
+    libgtk-3-0 \
+    libxi6 \
+    libxtst6 \
+    libxrender1 \
+    libusb-1.0-0-dev \
     ca-certificates \
     build-essential \
     unzip \
