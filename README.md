@@ -1,8 +1,12 @@
 # docker-ccstudio-ide
 
-<img src="./.github/docker-ccstudio-ide.jpg" width=256 height=256 />
+<!-- markdownlint-disable MD033 -->
+<img src="./.github/docker-ccstudio-ide.jpg" width=256 height=256 alt="docker-ccstudio-ide" />
+<!-- markdownlint-enable MD033 -->
 
 The [`docker-ccstudio-ide`](https://github.com/uoohyo/docker-ccstudio-ide) Docker image provides a CI/CD environment for projects developed in the Code Composer Studio IDE from Texas Instruments. Code Composer Studio is an integrated development environment (IDE) for TI's microcontrollers and processors, comprising a suite of tools used to develop and debug embedded applications.
+
+> **Note:** CCS is downloaded and installed when the container starts, not at image build time. An internet connection is required at runtime.
 
 ## Build
 
@@ -20,15 +24,17 @@ Run the pulled image. By default, the image is configured with the latest versio
 
     docker run -it uoohyo/ccstudio-ide:latest
 
+> **Estimated startup time:** CCS installer is approximately 1.4 GB. Expect **15–30 minutes** on first run depending on network speed and system performance (download ~2–20 min + installation ~10 min).
+
 ### Environments
 
 You can modify environment variables when running the [`uoohyo/ccstudio-ide`](https://hub.docker.com/r/uoohyo/ccstudio-ide) image to specify the version and development tools configuration of Code Composer Studio to be installed. Here is how you can customize it:
 
     docker run -it \
     -e MAJOR_VER=20 \
-    -e MINOR_VER=2 \
+    -e MINOR_VER=5 \
     -e PATCH_VER=0 \
-    -e BUILD_VER=00012 \
+    -e BUILD_VER=00028 \
     -e COMPONENTS=PF_C28 \
     uoohyo/ccstudio-ide:latest
 
@@ -38,12 +44,12 @@ The structure of the [Code Composer Studio](https://www.ti.com/tool/CCSTUDIO) ve
 
     <MAJOR_VER> . <MINOR_VER> . <PATCH_VER> . <BUILD_VER>
 
-As of June 17, 2025, the latest released version of [Code Composer Studio](https://www.ti.com/tool/CCSTUDIO) is `20.2.0.00012`. The default environment variables are set accordingly
+The default environment variables are set to the latest version available at the time of the image update:
 
     ENV MAJOR_VER=20
-    ENV MINOR_VER=2
+    ENV MINOR_VER=5
     ENV PATCH_VER=0
-    ENV BUILD_VER=00012
+    ENV BUILD_VER=00028
 
 For the latest version information, visit [this link](https://www.ti.com/tool/download/CCSTUDIO).
 
@@ -77,25 +83,37 @@ When installing [Code Composer Studio](https://www.ti.com/tool/CCSTUDIO), you ca
 
 Multiple product families can be installed by separating their names with a comma in the `COMPONENTS` variable. Here is an example that installs development tools for both PF_MSP430 and PF_CC2X:
 
-    docker run -it
-    -e COMPONENTS PF_MSP430, PF_CC2X
+    docker run -it \
+    -e COMPONENTS="PF_MSP430,PF_CC2X" \
     uoohyo/ccstudio-ide:latest
 
 ## Usage
 
 Once the image is running, you can add projects to the workspace and execute builds based on specific build options. Below are example commands to demonstrate these actions.
 
+**CCS v20 and above (Theia-based):**
+
 Import a project into the workspace:
 
-    eclipse -noSplash -data <workspace_path> -application com.ti.ccstudio.apps.projectImport -ccs.location <project_path>
-    
+    ccs-server-cli -noSplash -workspace <workspace_path> -application com.ti.ccs.apps.importProject -ccs.location <project_path>
+
 Build a project using specific configuration:
 
-    eclipse -noSplash -data <workspace_path> -application com.ti.ccstudio.apps.projectBuild -ccs.projects <project_name> -ccs.configuration <build_name>
+    ccs-server-cli -noSplash -workspace <workspace_path> -application com.ti.ccs.apps.buildProject -ccs.projects <project_name> -ccs.configuration <build_name>
 
-These commands utilize the `eclipse` executable to manage projects within the Code Composer Studio environment without the need for a graphical interface, making them ideal for automated environments such as continuous integration setups.
+**CCS v12 and below (Eclipse-based):**
 
-For more detailed commands and explanations, visit [this link](https://dev.ti.com/tirex/explore/node?node=AJpAFDF7v70N4B0-zFMXpw__FUz-xrs__LATEST).
+Import a project into the workspace:
+
+    eclipsec -noSplash -data <workspace_path> -application com.ti.ccstudio.apps.projectImport -ccs.location <project_path>
+
+Build a project using specific configuration:
+
+    eclipsec -noSplash -data <workspace_path> -application com.ti.ccstudio.apps.projectBuild -ccs.projects <project_name> -ccs.configuration <build_name>
+
+These commands manage projects within the Code Composer Studio environment without the need for a graphical interface, making them ideal for automated environments such as continuous integration setups.
+
+For more detailed commands and explanations, visit [this link](https://software-dl.ti.com/ccs/esd/documents/users_guide_ccs_20.0.0/ccs_project-command-line.html).
 
 ## License
 

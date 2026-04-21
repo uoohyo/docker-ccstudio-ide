@@ -1,0 +1,55 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Docker: Build Image",
+            "type": "shell",
+            "command": "docker build -t uoohyo/ccstudio-ide:latest .",
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "presentation": {
+                "reveal": "always",
+                "panel": "new"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "Docker: Run (Default - v20.5.0.00028)",
+            "type": "shell",
+            "command": "docker run -it -e MAJOR_VER=20 -e MINOR_VER=5 -e PATCH_VER=0 -e BUILD_VER=00028 -e COMPONENTS=PF_C28 uoohyo/ccstudio-ide:latest",
+            "group": "test",
+            "presentation": {
+                "reveal": "always",
+                "panel": "new"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "Docker: Run (v20.2.0.00012)",
+            "type": "shell",
+            "command": "docker run -it -e MAJOR_VER=20 -e MINOR_VER=2 -e PATCH_VER=0 -e BUILD_VER=00012 -e COMPONENTS=PF_C28 uoohyo/ccstudio-ide:latest",
+            "group": "test",
+            "presentation": {
+                "reveal": "always",
+                "panel": "new"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "Docker: Run (v12.8.0.00012)",
+            "type": "shell",
+            "command": "docker run -it -e MAJOR_VER=12 -e MINOR_VER=8 -e PATCH_VER=0 -e BUILD_VER=00012 -e COMPONENTS=PF_C28 uoohyo/ccstudio-ide:latest",
+            "group": "test",
+            "presentation": {
+                "reveal": "always",
+                "panel": "new"
+            },
+            "problemMatcher": []
+        }
+    ]
+}
