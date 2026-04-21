@@ -35,7 +35,7 @@ RUN echo ">>> Installing system dependencies..." && \
 # Working Directory
 WORKDIR /home
 
-# CCS CLI Path
+# CCS CLI Path (v20+ default; v12 path is set dynamically in entrypoint.sh)
 ENV PATH="/opt/ti/ccs/eclipse/:${PATH}"
 
 # Entrypoint
