@@ -25,6 +25,22 @@ RUN echo ">>> Installing system dependencies..." && \
     libtinfo5:i386 \
     libpython2.7 \
     libudev1 \
+    libasound2 \
+    libatk1.0-0 \
+    libcairo2 \
+    libgtk-3-0 \
+    libxi6 \
+    libxtst6 \
+    libxrender1 \
+    libusb-1.0-0-dev \
+    libgconf-2-4 \
+    libncurses5 \
+    libtinfo5 \
+    libusb-0.1-4 \
+    libdbus-glib-1-2 \
+    libgtk2.0-0 \
+    libxt6 \
+    libcanberra0 \
     ca-certificates \
     build-essential \
     unzip \
@@ -39,6 +55,7 @@ WORKDIR /home
 ENV PATH="/opt/ti/ccs/eclipse/:${PATH}"
 
 # Entrypoint
-COPY --chmod=755 entrypoint.sh /entrypoint.sh
+COPY entrypoint.sh /entrypoint.sh
+RUN sed -i 's/\r//' /entrypoint.sh && chmod 755 /entrypoint.sh
 ENTRYPOINT ["/entrypoint.sh"]
 CMD ["bash"]
