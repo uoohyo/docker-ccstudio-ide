@@ -4,6 +4,18 @@
 <img src="./.github/docker-ccstudio-ide.jpg" width=256 height=256 alt="docker-ccstudio-ide" />
 <!-- markdownlint-enable MD033 -->
 
+[![Build](https://github.com/uoohyo/docker-ccstudio-ide/actions/workflows/docker-publish.yml/badge.svg)](https://github.com/uoohyo/docker-ccstudio-ide/actions/workflows/docker-publish.yml)
+
+| CCS Version   | Status                                                                                                                                                                                      |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| v20.5.0.00028 | [![Test CCS v20.5.0](https://github.com/uoohyo/docker-ccstudio-ide/actions/workflows/test-v20.yml/badge.svg)](https://github.com/uoohyo/docker-ccstudio-ide/actions/workflows/test-v20.yml) |
+| v12.8.1.00005 | [![Test CCS v12.8.1](https://github.com/uoohyo/docker-ccstudio-ide/actions/workflows/test-v12.yml/badge.svg)](https://github.com/uoohyo/docker-ccstudio-ide/actions/workflows/test-v12.yml) |
+| v11.2.0.00007 | [![Test CCS v11.2.0](https://github.com/uoohyo/docker-ccstudio-ide/actions/workflows/test-v11.yml/badge.svg)](https://github.com/uoohyo/docker-ccstudio-ide/actions/workflows/test-v11.yml) |
+| v10.4.0.00006 | [![Test CCS v10.4.0](https://github.com/uoohyo/docker-ccstudio-ide/actions/workflows/test-v10.yml/badge.svg)](https://github.com/uoohyo/docker-ccstudio-ide/actions/workflows/test-v10.yml) |
+| v9.3.0.00012  | [![Test CCS v9.3.0](https://github.com/uoohyo/docker-ccstudio-ide/actions/workflows/test-v9.yml/badge.svg)](https://github.com/uoohyo/docker-ccstudio-ide/actions/workflows/test-v9.yml)    |
+| v8.3.1.00004  | [![Test CCS v8.3.1](https://github.com/uoohyo/docker-ccstudio-ide/actions/workflows/test-v8.yml/badge.svg)](https://github.com/uoohyo/docker-ccstudio-ide/actions/workflows/test-v8.yml)    |
+| v7.4.0.00015  | [![Test CCS v7.4.0](https://github.com/uoohyo/docker-ccstudio-ide/actions/workflows/test-v7.yml/badge.svg)](https://github.com/uoohyo/docker-ccstudio-ide/actions/workflows/test-v7.yml)    |
+
 The [`docker-ccstudio-ide`](https://github.com/uoohyo/docker-ccstudio-ide) Docker image provides a CI/CD environment for projects developed in the Code Composer Studio IDE from Texas Instruments. Code Composer Studio is an integrated development environment (IDE) for TI's microcontrollers and processors, comprising a suite of tools used to develop and debug embedded applications.
 
 > **Note:** CCS is downloaded and installed when the container starts, not at image build time. An internet connection is required at runtime.
@@ -55,35 +67,35 @@ For the latest version information, visit [this link](https://www.ti.com/tool/do
 
 #### Components
 
-Component selection via the `COMPONENTS` variable is supported on **CCS v9.2.0 and above**. For CCS v9.1 and below, the `COMPONENTS` variable is ignored and all product families are installed.
+Component selection via the `COMPONENTS` variable is supported on **CCS v10 and above**. For CCS v9 and below, the `COMPONENTS` variable is ignored and all product families are installed.
 
 When installing [Code Composer Studio](https://www.ti.com/tool/CCSTUDIO), you can choose from various [Texas Instruments Inc.](https://www.ti.com/) product families. Below is a list of installable product families:
 
-|Product family     |Description                                                                    |
-|-------------------|-------------------------------------------------------------------------------|
-|PF_MSP430          |MSP430 ultra-low power MCUs                                                    |
-|PF_MSP432          |SimpleLink™ MSP432™ low power + performance MCUs                               |
-|PF_CC2X            |SimpleLink™ CC13xx and CC26xx Wireless MCUs                                    |
-|PF_CC3X            |SimpleLink™ Wi-Fi® CC32xx Wireless MCUs                                        |
-|PF_CC2538          |CC2538 IEEE 802.15.4 Wireless MCUs                                             |
-|PF_C28             |C2000 real-time MCUs                                                           |
-|PF_TM4C            |TM4C12x ARM® Cortex®-M4F core-based MCUs                                       |
-|PF_PGA             |PGA Sensor Signal Conditioners                                                 |
-|PF_HERCULES        |Hercules™ Safety MCUs                                                          |
-|PF_SITARA          |Sitara™ AM3x, AM4x, AM5x and AM6x MPUs (will also include AM2x for CCS 10.x)   |
-|PF_SITARA_MCU      |Sitara™ AM2x MCUs (only supported in CCS 11.x and greater)                     |
-|PF_OMAPL           |OMAP-L1x DSP + ARM9® Processor                                                 |
-|PF_DAVINCI         |DaVinci (DM) Video Processors                                                  |
-|PF_OMAP            |OMAP Processors                                                                |
-|PF_TDA_DRA         |TDAx Driver Assistance SoCs & Jacinto DRAx Infotainment SoCs                   |
-|PF_C55             |C55x ultra-low-power DSP                                                       |
-|PF_C6000SC         |C6000 Power-Optimized DSP                                                      |
-|PF_C66AK_KEYSTONE  |66AK2x multicore DSP + ARM® Processors & C66x KeyStone™ multicore DSP          |
-|PF_MMWAVE          |mmWave Sensors                                                                 |
-|PF_C64MC           |C64x multicore DSP                                                             |
-|PF_DIGITAL_POWER   |UCD Digital Power Controllers                                                  |
+| Product family    | Description                                                                  |
+| ----------------- | ---------------------------------------------------------------------------- |
+| PF_MSP430         | MSP430 ultra-low power MCUs                                                  |
+| PF_MSP432         | SimpleLink™ MSP432™ low power + performance MCUs                             |
+| PF_CC2X           | SimpleLink™ CC13xx and CC26xx Wireless MCUs                                  |
+| PF_CC3X           | SimpleLink™ Wi-Fi® CC32xx Wireless MCUs                                      |
+| PF_CC2538         | CC2538 IEEE 802.15.4 Wireless MCUs                                           |
+| PF_C28            | C2000 real-time MCUs                                                         |
+| PF_TM4C           | TM4C12x ARM® Cortex®-M4F core-based MCUs                                     |
+| PF_PGA            | PGA Sensor Signal Conditioners                                               |
+| PF_HERCULES       | Hercules™ Safety MCUs                                                        |
+| PF_SITARA         | Sitara™ AM3x, AM4x, AM5x and AM6x MPUs (will also include AM2x for CCS 10.x) |
+| PF_SITARA_MCU     | Sitara™ AM2x MCUs (only supported in CCS 11.x and greater)                   |
+| PF_OMAPL          | OMAP-L1x DSP + ARM9® Processor                                               |
+| PF_DAVINCI        | DaVinci (DM) Video Processors                                                |
+| PF_OMAP           | OMAP Processors                                                              |
+| PF_TDA_DRA        | TDAx Driver Assistance SoCs & Jacinto DRAx Infotainment SoCs                 |
+| PF_C55            | C55x ultra-low-power DSP                                                     |
+| PF_C6000SC        | C6000 Power-Optimized DSP                                                    |
+| PF_C66AK_KEYSTONE | 66AK2x multicore DSP + ARM® Processors & C66x KeyStone™ multicore DSP        |
+| PF_MMWAVE         | mmWave Sensors                                                               |
+| PF_C64MC          | C64x multicore DSP                                                           |
+| PF_DIGITAL_POWER  | UCD Digital Power Controllers                                                |
 
-> **Note:** For CCS v9.1 and below, the installer does not support component selection. All product families will be installed regardless of the `COMPONENTS` value, which will result in a larger installation size.
+> **Note:** For CCS v9 and below, the installer does not support component selection. All product families will be installed regardless of the `COMPONENTS` value, which will result in a larger installation size.
 
 Multiple product families can be installed by separating their names with a comma in the `COMPONENTS` variable. Here is an example that installs development tools for both PF_MSP430 and PF_CC2X:
 
@@ -109,11 +121,11 @@ Build a project using specific configuration:
 
 Import a project into the workspace:
 
-    eclipsec -noSplash -data <workspace_path> -application com.ti.ccstudio.apps.projectImport -ccs.location <project_path>
+    eclipse -noSplash -data <workspace_path> -application com.ti.ccstudio.apps.projectImport -ccs.location <project_path>
 
 Build a project using specific configuration:
 
-    eclipsec -noSplash -data <workspace_path> -application com.ti.ccstudio.apps.projectBuild -ccs.projects <project_name> -ccs.configuration <build_name>
+    eclipse -noSplash -data <workspace_path> -application com.ti.ccstudio.apps.projectBuild -ccs.projects <project_name> -ccs.configuration <build_name>
 
 These commands manage projects within the Code Composer Studio environment without the need for a graphical interface, making them ideal for automated environments such as continuous integration setups.
 
