@@ -86,20 +86,32 @@ else
     else
         CCS_DL_PATH="${VER}"
     fi
+    # Driver install scripts (bh_driver_install.sh for v7-v9, ti_permissions_install.sh for v10-v12)
+    # copy udev rules then try to restart the udev service, which doesn't exist in Docker:
+    #   v7-v9:   'service udev restart'  → "udev: unrecognized service"
+    #   v10-v12: 'systemctl restart udev' → "not booted with systemd"
+    # Either failure causes the BitRock/Run installer to roll back the full installation.
+    # Fix: create required dirs, stub udev init script, and redirect udev-related commands to /bin/true.
+    # /root/.ti is read by the installer's fs --clean step; missing it causes a boost::filesystem crash.
+    mkdir -p /etc/init.d /etc/udev/rules.d /root/.ti
+    printf '#!/bin/sh\nexit 0\n' > /etc/init.d/udev && chmod 755 /etc/init.d/udev
+    ln -sf /bin/true /usr/local/bin/udevadm
+    ln -sf /bin/true /usr/local/bin/systemctl
     wget --timeout=300 --tries=3 "${CCS_URL}${CCS_DL_PATH}/CCS${VER}_linux-x64.tar.gz"
     echo ">>> Extracting..."
     tar -zxf "CCS${VER}_linux-x64.tar.gz"
     chmod -R 755 "CCS${VER}_linux-x64"
     echo ">>> Installing CCS ${VER} (this may take a while)..."
     # v10+: new installer (.run, supports --enable-components with PF_* IDs)
-    # v9-:  old BitRock installer (linux64_*.bin, --enable-components not supported)
+    # v9-:  old BitRock installer; binary name varies (linux64_*.bin or *.run), use find to detect
     if [ "${MAJOR_VER}" -ge 10 ]; then
         "./CCS${VER}_linux-x64/ccs_setup_${VER}.run" \
             --mode unattended --enable-components "${COMPONENTS}" --prefix /opt/ti \
             --install-BlackHawk false --install-Segger false 2>&1 | tee "${INSTALL_LOG}"
     else
         echo ">>> Note: --enable-components is not supported for CCS v9 and below. Installing all components."
-        "./CCS${VER}_linux-x64/ccs_setup_linux64_${VER}.bin" \
+        INSTALLER_BIN=$(find "./CCS${VER}_linux-x64" -maxdepth 1 \( -name "*.bin" -o -name "*.run" \) | sort | head -1)
+        "${INSTALLER_BIN}" \
             --mode unattended --prefix /opt/ti \
             --install-BlackHawk false --install-Segger false 2>&1 | tee "${INSTALL_LOG}"
     fi
@@ -107,18 +119,11 @@ fi
 
 # Verify Installation
 # v20+: Theia-based, check ccs-server-cli.sh
-# v9+:  Eclipse-based with eclipsec
-# v8-:  Eclipse-based, only eclipse binary (no eclipsec)
+# v19-: Eclipse-based, binary is always named 'eclipse' (not 'eclipsec')
 echo ">>> Verifying CCS installation..."
 if [ "${MAJOR_VER}" -ge 20 ]; then
     if ! test -x "${CCS_ECLIPSE_DIR}/ccs-server-cli.sh"; then
         echo "[ERROR] CCS installation failed: ccs-server-cli.sh not found"
-        _show_install_logs
-        exit 1
-    fi
-elif [ "${MAJOR_VER}" -ge 9 ]; then
-    if ! test -x "${CCS_ECLIPSE_DIR}/eclipsec"; then
-        echo "[ERROR] CCS installation failed: eclipsec not found"
         _show_install_logs
         exit 1
     fi
