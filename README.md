@@ -1,20 +1,27 @@
 # docker-ccstudio-ide
 
-<!-- markdownlint-disable MD033 -->
-<img src="./.github/docker-ccstudio-ide.jpg" width=256 height=256 alt="docker-ccstudio-ide" />
-<!-- markdownlint-enable MD033 -->
-
 [![Build](https://github.com/uoohyo/docker-ccstudio-ide/actions/workflows/docker-publish.yml/badge.svg)](https://github.com/uoohyo/docker-ccstudio-ide/actions/workflows/docker-publish.yml)
 
-| CCS Version   | Status                                                                                                                                                                                      |
-| ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| v20.5.0.00028 | [![Test CCS v20.5.0](https://github.com/uoohyo/docker-ccstudio-ide/actions/workflows/test-v20.yml/badge.svg)](https://github.com/uoohyo/docker-ccstudio-ide/actions/workflows/test-v20.yml) |
-| v12.8.1.00005 | [![Test CCS v12.8.1](https://github.com/uoohyo/docker-ccstudio-ide/actions/workflows/test-v12.yml/badge.svg)](https://github.com/uoohyo/docker-ccstudio-ide/actions/workflows/test-v12.yml) |
-| v11.2.0.00007 | [![Test CCS v11.2.0](https://github.com/uoohyo/docker-ccstudio-ide/actions/workflows/test-v11.yml/badge.svg)](https://github.com/uoohyo/docker-ccstudio-ide/actions/workflows/test-v11.yml) |
-| v10.4.0.00006 | [![Test CCS v10.4.0](https://github.com/uoohyo/docker-ccstudio-ide/actions/workflows/test-v10.yml/badge.svg)](https://github.com/uoohyo/docker-ccstudio-ide/actions/workflows/test-v10.yml) |
-| v9.3.0.00012  | [![Test CCS v9.3.0](https://github.com/uoohyo/docker-ccstudio-ide/actions/workflows/test-v9.yml/badge.svg)](https://github.com/uoohyo/docker-ccstudio-ide/actions/workflows/test-v9.yml)    |
-| v8.3.1.00004  | [![Test CCS v8.3.1](https://github.com/uoohyo/docker-ccstudio-ide/actions/workflows/test-v8.yml/badge.svg)](https://github.com/uoohyo/docker-ccstudio-ide/actions/workflows/test-v8.yml)    |
-| v7.4.0.00015  | [![Test CCS v7.4.0](https://github.com/uoohyo/docker-ccstudio-ide/actions/workflows/test-v7.yml/badge.svg)](https://github.com/uoohyo/docker-ccstudio-ide/actions/workflows/test-v7.yml)    |
+<!-- markdownlint-disable MD033 -->
+<table>
+  <tr>
+    <td><img src="./.github/docker-ccstudio-ide.jpg" width="256" height="256" alt="docker-ccstudio-ide" /></td>
+    <td valign="top">
+      <b>CCS™ Version Test Status</b>
+      <table>
+        <tr><th>Version</th><th>Status</th></tr>
+        <tr><td>v20.5.0.00028</td><td><a href="https://github.com/uoohyo/docker-ccstudio-ide/actions/workflows/test-v20.yml"><img src="https://img.shields.io/github/actions/workflow/status/uoohyo/docker-ccstudio-ide/test-v20.yml?branch=main&label=&style=flat-square" alt="v20.5.0" /></a></td></tr>
+        <tr><td>v12.8.1.00005</td><td><a href="https://github.com/uoohyo/docker-ccstudio-ide/actions/workflows/test-v12.yml"><img src="https://img.shields.io/github/actions/workflow/status/uoohyo/docker-ccstudio-ide/test-v12.yml?branch=main&label=&style=flat-square" alt="v12.8.1" /></a></td></tr>
+        <tr><td>v11.2.0.00007</td><td><a href="https://github.com/uoohyo/docker-ccstudio-ide/actions/workflows/test-v11.yml"><img src="https://img.shields.io/github/actions/workflow/status/uoohyo/docker-ccstudio-ide/test-v11.yml?branch=main&label=&style=flat-square" alt="v11.2.0" /></a></td></tr>
+        <tr><td>v10.4.0.00006</td><td><a href="https://github.com/uoohyo/docker-ccstudio-ide/actions/workflows/test-v10.yml"><img src="https://img.shields.io/github/actions/workflow/status/uoohyo/docker-ccstudio-ide/test-v10.yml?branch=main&label=&style=flat-square" alt="v10.4.0" /></a></td></tr>
+        <tr><td>v9.3.0.00012</td><td><a href="https://github.com/uoohyo/docker-ccstudio-ide/actions/workflows/test-v9.yml"><img src="https://img.shields.io/github/actions/workflow/status/uoohyo/docker-ccstudio-ide/test-v9.yml?branch=main&label=&style=flat-square" alt="v9.3.0" /></a></td></tr>
+        <tr><td>v8.3.1.00004</td><td><a href="https://github.com/uoohyo/docker-ccstudio-ide/actions/workflows/test-v8.yml"><img src="https://img.shields.io/github/actions/workflow/status/uoohyo/docker-ccstudio-ide/test-v8.yml?branch=main&label=&style=flat-square" alt="v8.3.1" /></a></td></tr>
+        <tr><td>v7.4.0.00015</td><td><a href="https://github.com/uoohyo/docker-ccstudio-ide/actions/workflows/test-v7.yml"><img src="https://img.shields.io/github/actions/workflow/status/uoohyo/docker-ccstudio-ide/test-v7.yml?branch=main&label=&style=flat-square" alt="v7.4.0" /></a></td></tr>
+      </table>
+    </td>
+  </tr>
+</table>
+<!-- markdownlint-enable MD033 -->
 
 The [`docker-ccstudio-ide`](https://github.com/uoohyo/docker-ccstudio-ide) Docker image provides a CI/CD environment for projects developed in the Code Composer Studio IDE from Texas Instruments. Code Composer Studio is an integrated development environment (IDE) for TI's microcontrollers and processors, comprising a suite of tools used to develop and debug embedded applications.
 
