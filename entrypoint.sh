@@ -71,9 +71,9 @@ if [ "${MAJOR_VER}" -ge 20 ]; then
     ln -sf /bin/true /sbin/rmmod
     mkdir -p /etc/udev/rules.d /run/udev /lib/modules
 
-    wget --timeout=300 --tries=3 "${CCS_URL}${MAJOR_VER}.${MINOR_VER}.${PATCH_VER}/CCS_${VER}_linux.zip"
+    aria2c -x 16 -s 16 --file-allocation=none --timeout=300 --max-tries=3 --console-log-level=error --summary-interval=0 -q -o "CCS_${VER}_linux.zip" "${CCS_URL}${MAJOR_VER}.${MINOR_VER}.${PATCH_VER}/CCS_${VER}_linux.zip"
     echo ">>> Extracting..."
-    unzip "CCS_${VER}_linux.zip"
+    unzip -q "CCS_${VER}_linux.zip"
     chmod -R 755 "CCS_${VER}_linux"
     echo ">>> Installing CCS ${VER} (this may take a while)..."
     cd "CCS_${VER}_linux"
@@ -97,7 +97,7 @@ else
     printf '#!/bin/sh\nexit 0\n' > /etc/init.d/udev && chmod 755 /etc/init.d/udev
     ln -sf /bin/true /usr/local/bin/udevadm
     ln -sf /bin/true /usr/local/bin/systemctl
-    wget --timeout=300 --tries=3 "${CCS_URL}${CCS_DL_PATH}/CCS${VER}_linux-x64.tar.gz"
+    aria2c -x 16 -s 16 --file-allocation=none --timeout=300 --max-tries=3 --console-log-level=error --summary-interval=0 -q -o "CCS${VER}_linux-x64.tar.gz" "${CCS_URL}${CCS_DL_PATH}/CCS${VER}_linux-x64.tar.gz"
     echo ">>> Extracting..."
     tar -zxf "CCS${VER}_linux-x64.tar.gz"
     chmod -R 755 "CCS${VER}_linux-x64"

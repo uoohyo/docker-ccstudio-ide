@@ -44,7 +44,8 @@ RUN echo ">>> Installing system dependencies..." && \
     ca-certificates \
     build-essential \
     unzip \
-    wget && \
+    wget \
+    aria2 && \
     apt-get clean && rm -rf /var/lib/apt/lists/* && \
     echo ">>> Done."
 
