@@ -21,7 +21,7 @@ load_from_file() {
     echo "$VERSIONS"
 }
 
-# Function to scrape from TI website
+# Function to scrape from TI website and merge with manual versions
 scrape_from_web() {
     echo "Scraping CCS versions from TI website (requires Node.js + Playwright)..." >&2
 
@@ -36,16 +36,23 @@ scrape_from_web() {
     if [ ! -d "${SCRIPT_DIR}/node_modules" ]; then
         echo "Installing Playwright..." >&2
         cd "${SCRIPT_DIR}"
-        npm install --silent 2>&1 > /dev/null
-        npx playwright install chromium --with-deps 2>&1 > /dev/null
+        npm install --silent > /dev/null 2>&1
+        npx playwright install chromium --with-deps > /dev/null 2>&1
     fi
 
-    # Run scraper
-    VERSIONS=$(node "${SCRIPT_DIR}/scrape-versions.js" 2>&1)
-
-    if [ $? -ne 0 ] || [ -z "$VERSIONS" ]; then
+    # Run scraper and merge with manual versions
+    echo "Running scraper..." >&2
+    if ! SCRAPED=$(node "${SCRIPT_DIR}/scrape-versions.js" 2>/dev/null) || [ -z "$SCRAPED" ]; then
         echo "Warning: Scraping failed, falling back to versions.json" >&2
         load_from_file
+        return
+    fi
+
+    # Merge scraped versions with manual versions.json
+    echo "Merging with manual versions..." >&2
+    if ! VERSIONS=$(echo "$SCRAPED" | node "${SCRIPT_DIR}/merge-versions.js" 2>&1) || [ -z "$VERSIONS" ]; then
+        echo "Warning: Merge failed, using scraped versions only" >&2
+        echo "$SCRAPED"
         return
     fi
 
