@@ -71,7 +71,7 @@ async function main() {
     process.exit(1);
   }
 
-  const targets = versions.filter(v => v.linux_supported !== false);
+  const targets = versions.filter(v => v.public_download === true);
   if (targets.length === 0) {
     console.log('No linux-supported versions to validate.');
     process.exit(0);

@@ -41,6 +41,41 @@ function hasLinuxLink(html) {
   return false;
 }
 
+// Construct the URL the Dockerfile would use for this version.
+// public_download is verified by actually checking this URL (HEAD request).
+function buildDownloadUrl(v) {
+  const CDN = 'https://dr-download.ti.com/software-development/ide-configuration-compiler-or-debugger/MD-J1VdearkvK/';
+  const major = parseInt(v.major);
+  if (major >= 20) return `${CDN}${v.major}.${v.minor}.${v.patch}/CCS_${v.version}_linux.zip`;
+  if (major >= 12) return `${CDN}${v.major}.${v.minor}.${v.patch}/CCS${v.version}_linux-x64.tar.gz`;
+  return `${CDN}${v.version}/CCS${v.version}_linux-x64.tar.gz`;
+}
+
+async function checkUrl(url, timeoutMs = 20000) {
+  const ctrl  = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), timeoutMs);
+  try {
+    let res = await fetch(url, { method: 'HEAD', headers: HEADERS, signal: ctrl.signal, redirect: 'follow' });
+    clearTimeout(timer);
+    if (res.status === 405 || res.status === 403) {
+      const ctrl2  = new AbortController();
+      const timer2 = setTimeout(() => ctrl2.abort(), timeoutMs);
+      res = await fetch(url, {
+        method: 'GET',
+        headers: { ...HEADERS, Range: 'bytes=0-0' },
+        signal: ctrl2.signal,
+        redirect: 'follow',
+      });
+      clearTimeout(timer2);
+      return res.ok || res.status === 206;
+    }
+    return res.ok;
+  } catch (_) {
+    clearTimeout(timer);
+    return false;
+  }
+}
+
 async function fetchText(url, timeoutMs = 30000) {
   const ctrl  = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), timeoutMs);
@@ -88,7 +123,6 @@ async function scrapeVersions() {
           resolved.set(key, { fullVersion, linuxSupported: true });
           console.error(`  ${tiPath.padEnd(24)} → ${fullVersion}`);
         } else if (linuxFound) {
-          // Linux link exists but couldn't parse the version — use what we know.
           const fallback = v.build !== null
             ? `${v.major}.${v.minor}.${v.patch}.${v.build}`
             : null;
@@ -105,7 +139,30 @@ async function scrapeVersions() {
     }));
   }
 
-  // ── Step 3: build the final version list ──────────────────────────────────
+  // ── Step 3: verify Dockerfile download URLs for linux_supported versions ──
+  // public_download: true only when the URL the Dockerfile would construct
+  // is actually reachable. This correctly excludes v6 (/secure/) and v5
+  // (different CDN / self-cert) even if TI's page lists them as Linux-supported.
+  console.error('\nVerifying download URLs...');
+  const urlCache = new Map(); // key → boolean
+
+  const linuxCandidates = [...seen.entries()]
+    .map(([key, v]) => ({ key, v, info: resolved.get(key) }))
+    .filter(({ info }) => info && info.linuxSupported && info.fullVersion);
+
+  for (let i = 0; i < linuxCandidates.length; i += CONCURRENCY) {
+    const batch = linuxCandidates.slice(i, i + CONCURRENCY);
+    await Promise.all(batch.map(async ({ key, info }) => {
+      const parts = info.fullVersion.split('.');
+      const vObj  = { version: info.fullVersion, major: parts[0], minor: parts[1], patch: parts[2], build: parts[3] };
+      const url   = buildDownloadUrl(vObj);
+      const ok    = await checkUrl(url);
+      urlCache.set(key, ok);
+      console.error(`  ${info.fullVersion.padEnd(22)} ${ok ? '✓' : '✗'}`);
+    }));
+  }
+
+  // ── Step 4: build the final version list ──────────────────────────────────
   const versionList = [];
   for (const [key, v] of seen.entries()) {
     const info        = resolved.get(key) || { fullVersion: null, linuxSupported: false };
@@ -115,12 +172,13 @@ async function scrapeVersions() {
       : [v.major, v.minor, v.patch, v.build ?? '0'];
 
     versionList.push({
-      version:        fullVersion || `${v.major}.${v.minor}.${v.patch}.${v.build ?? '0'}`,
-      major:          parts[0],
-      minor:          parts[1],
-      patch:          parts[2],
-      build:          parts[3],
+      version:         fullVersion || `${v.major}.${v.minor}.${v.patch}.${v.build ?? '0'}`,
+      major:           parts[0],
+      minor:           parts[1],
+      patch:           parts[2],
+      build:           parts[3],
       linux_supported: info.linuxSupported,
+      public_download: urlCache.get(key) === true,
     });
   }
 

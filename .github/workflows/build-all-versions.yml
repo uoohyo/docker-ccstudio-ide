@@ -44,13 +44,13 @@ jobs:
           DELIMITER=$(openssl rand -hex 8)
           { echo "versions<<${DELIMITER}"; echo "${VERSIONS}"; echo "${DELIMITER}"; } >> $GITHUB_OUTPUT
 
-          # Linux-supported versions only (for the build matrix)
-          BUILD_VERSIONS=$(echo "$VERSIONS" | jq '[.[] | select(.linux_supported != false)]')
+          # Publicly downloadable versions only (for the build matrix), sorted oldest-first
+          BUILD_VERSIONS=$(echo "$VERSIONS" | jq '[.[] | select(.public_download == true)] | sort_by([.major, .minor, .patch, .build] | map(tonumber))')
           DELIMITER2=$(openssl rand -hex 8)
           { echo "build_versions<<${DELIMITER2}"; echo "${BUILD_VERSIONS}"; echo "${DELIMITER2}"; } >> $GITHUB_OUTPUT
 
-          # Latest linux-supported version for the latest tag
-          LATEST=$(echo "$BUILD_VERSIONS" | jq -r '.[0].version')
+          # Latest = highest version (last after ascending sort)
+          LATEST=$(echo "$BUILD_VERSIONS" | jq -r '.[-1].version')
           echo "latest_version=${LATEST}" >> $GITHUB_OUTPUT
 
           echo "Total versions: $(echo "$VERSIONS" | jq '. | length')"
