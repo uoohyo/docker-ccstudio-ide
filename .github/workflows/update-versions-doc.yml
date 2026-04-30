@@ -1,0 +1,135 @@
+name: Update Versions Documentation
+
+on:
+  workflow_run:
+    workflows: ["Build All CCS Versions"]
+    types: [completed]
+  workflow_dispatch:
+
+jobs:
+  update-versions:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Fetch Docker Hub versions
+        id: fetch-versions
+        run: |
+          echo "Fetching versions from Docker Hub..."
+
+          # Fetch all version tags
+          ALL_TAGS=""
+          PAGE=1
+
+          while true; do
+            RESPONSE=$(curl -s "https://hub.docker.com/v2/repositories/uoohyo/ccstudio-ide/tags?page=${PAGE}&page_size=100")
+            TAGS=$(echo "$RESPONSE" | jq -r '.results[].name' | grep -E '^[0-9]+\.[0-9]+\.[0-9]+(\.[0-9]+)?$' || echo "")
+
+            if [ -z "$TAGS" ]; then
+              break
+            fi
+
+            ALL_TAGS="${ALL_TAGS}${TAGS}"$'\n'
+
+            NEXT=$(echo "$RESPONSE" | jq -r '.next')
+            if [ "$NEXT" = "null" ]; then
+              break
+            fi
+
+            PAGE=$((PAGE + 1))
+          done
+
+          # Sort versions (newest first)
+          echo "$ALL_TAGS" | grep -v '^$' | sort -Vr > /tmp/versions.txt
+
+          echo "Found $(wc -l < /tmp/versions.txt) versions"
+
+      - name: Generate version table
+        run: |
+          echo "Generating version table..."
+
+          # Table header
+          cat > /tmp/table.md << 'EOF'
+| 버전 | 빌드 상태 | TI 다운로드 |
+|------|-----------|-------------|
+EOF
+
+          # Generate rows
+          while IFS= read -r version; do
+            if [ -z "$version" ]; then
+              continue
+            fi
+
+            # Build status badge
+            # GitHub Actions 워크플로우 배지 (특정 버전 빌드는 추적 어려우므로 전체 워크플로우 상태 사용)
+            BUILD_BADGE="![Build](https://github.com/${{ github.repository }}/workflows/Build%20All%20CCS%20Versions/badge.svg)"
+
+            # TI download link - handle both 3-part and 4-part versions
+            if [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+              # 4-part version (e.g., 11.2.0.00007)
+              TI_LINK="https://www.ti.com/tool/download/CCSTUDIO/${version}"
+            else
+              # 3-part version (e.g., 20.5.0 or 12.8.1)
+              TI_LINK="https://www.ti.com/tool/download/CCSTUDIO/${version}"
+            fi
+
+            # Add table row
+            echo "| \`${version}\` | ${BUILD_BADGE} | [다운로드](${TI_LINK}) |" >> /tmp/table.md
+
+          done < /tmp/versions.txt
+
+          echo "Table generated with $(wc -l < /tmp/table.md) rows"
+
+      - name: Update versions.md
+        run: |
+          echo "Updating docs/versions.md..."
+
+          # Copy template
+          cp docs/versions.template.md docs/versions.md
+
+          # Read generated table
+          TABLE=$(cat /tmp/table.md)
+
+          # Current timestamp
+          TIMESTAMP=$(date -u '+%Y-%m-%d %H:%M:%S UTC')
+
+          # Replace content using awk
+          awk -v table="$TABLE" -v timestamp="$TIMESTAMP" '
+            /<!-- VERSION_TABLE_START -->/ {
+              print
+              print ""
+              print table
+              print ""
+              skip=1
+              next
+            }
+            /<!-- VERSION_TABLE_END -->/ {
+              skip=0
+              print
+              next
+            }
+            /<!-- LAST_UPDATE -->/ {
+              gsub(/<!-- LAST_UPDATE -->/, timestamp)
+            }
+            !skip
+          ' docs/versions.md > docs/versions.md.tmp
+
+          mv docs/versions.md.tmp docs/versions.md
+
+          echo "versions.md updated successfully"
+
+      - name: Commit and push
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+
+          git add docs/versions.md
+
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "📝 auto-update versions documentation [skip ci]"
+            git push
+            echo "Versions documentation updated"
+          fi
