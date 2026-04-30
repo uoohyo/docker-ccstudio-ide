@@ -11,13 +11,7 @@ if ! command -v node &> /dev/null; then
     exit 1
 fi
 
-# Install dependencies if needed
-if [ ! -d "${SCRIPT_DIR}/node_modules" ]; then
-    echo "Installing dependencies..." >&2
-    cd "${SCRIPT_DIR}"
-    npm install --silent > /dev/null 2>&1
-    npx playwright install chromium --with-deps > /dev/null 2>&1
-fi
+# No external dependencies required (uses built-in Node.js fetch)
 
 echo "Scraping CCS versions from TI website..." >&2
 if ! SCRAPED=$(node "${SCRIPT_DIR}/scrape-versions.js" 2>/dev/null) || [ -z "$SCRAPED" ]; then

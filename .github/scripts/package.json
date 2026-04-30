@@ -6,7 +6,5 @@
   "scripts": {
     "scrape": "node scrape-versions.js"
   },
-  "dependencies": {
-    "playwright": "^1.40.0"
-  }
+  "dependencies": {}
 }

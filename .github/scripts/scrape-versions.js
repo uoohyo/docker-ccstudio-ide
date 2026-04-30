@@ -1,183 +1,152 @@
 #!/usr/bin/env node
 /**
- * Scrape CCS versions from the TI download page.
+ * Scrape CCS versions from the TI download page and verify download URLs.
  *
- * For every version with major >= 4 the canonical full version (including
- * build number) is read from the Linux installer filename shown on the TI
- * page when that version is selected in the filter.  Clicking each entry
- * triggers an AJAX update; a network-response interceptor and page-content
- * scan then capture the filename (e.g. CCS_20.5.0.00028_linux.zip or
- * CCS12.8.1.00007_linux-x64.tar.gz).
- *
- * Versions with major < 4 are skipped (no Linux builds ever existed).
- * Versions that have no Linux download link are included but flagged
- * linux_supported: false and excluded from Docker builds.
+ * Strategy (no headless browser needed):
+ *   1. Fetch the main TI download page — the full version list is in the
+ *      server-rendered HTML (CCSTUDIO/X.Y.Z.BUILD or CCSTUDIO/X.Y.Z paths).
+ *   2. v4–v11: the 4-part version is already in the path, no further fetch.
+ *   3. v12+:   only 3-part path; fetch the per-version page to read the Linux
+ *      installer filename and extract the build number.
+ *   4. Verify every candidate download URL is reachable.
+ *      linux_supported: true only when the CDN URL returns HTTP 200/206.
  */
 
-const { chromium } = require('playwright');
+const TI_BASE   = 'https://www.ti.com/tool/download/CCSTUDIO';
+const CDN_BASE  = 'https://dr-download.ti.com/software-development/ide-configuration-compiler-or-debugger/MD-J1VdearkvK/';
+const HEADERS   = { 'User-Agent': 'curl/7.81.0', Accept: '*/*' };
 
-const TI_URL = 'https://www.ti.com/tool/download/CCSTUDIO';
+// Match CCS Linux installer filenames in HTML:
+//   v20+:   CCS_20.5.0.00028_linux  → group 1 = '20.5.0.00028'
+//   v4–v19: CCS12.8.1.00007_linux   → group 1 = '12.8.1.00007'
+const LINUX_RE = /CCS[_]?(\d+\.\d+\.\d+\.\d+)_linux/g;
 
-// Match CCS Linux installer filenames:
-//   v20+:   CCS_20.5.0.00028_linux  → capture group 1 = '20.5.0.00028'
-//   v4–v19: CCS12.8.1.00007_linux   → capture group 1 = '12.8.1.00007'
-const LINUX_PATTERNS = [
-  /CCS_(\d+\.\d+\.\d+\.\d+)_linux/g,
-  /CCS(\d+\.\d+\.\d+\.\d+)_linux/g,
-];
+function parseLinuxVersion(html) {
+  LINUX_RE.lastIndex = 0;
+  const m = LINUX_RE.exec(html);
+  return m ? m[1] : null;
+}
 
-function scanText(text, map) {
-  for (const re of LINUX_PATTERNS) {
-    re.lastIndex = 0;
-    for (const m of text.matchAll(re)) {
-      const [ma, mi, pa, bu] = m[1].split('.');
-      const key = `${ma}.${mi}.${pa}`;
-      if (!map.has(key)) {
-        map.set(key, m[1]);
-        console.error(`  resolved ${key} → ${m[1]}`);
-      }
+function buildDownloadUrl(v) {
+  const major = parseInt(v.major);
+  if (major >= 20) return `${CDN_BASE}${v.major}.${v.minor}.${v.patch}/CCS_${v.version}_linux.zip`;
+  if (major >= 12) return `${CDN_BASE}${v.major}.${v.minor}.${v.patch}/CCS${v.version}_linux-x64.tar.gz`;
+  return `${CDN_BASE}${v.version}/CCS${v.version}_linux-x64.tar.gz`;
+}
+
+async function fetchText(url, timeoutMs = 30000) {
+  const ctrl  = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), timeoutMs);
+  try {
+    const res  = await fetch(url, { headers: HEADERS, signal: ctrl.signal });
+    return await res.text();
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function checkUrl(url, timeoutMs = 20000) {
+  const ctrl  = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), timeoutMs);
+  try {
+    let res = await fetch(url, { method: 'HEAD', headers: HEADERS, signal: ctrl.signal, redirect: 'follow' });
+    clearTimeout(timer);
+    if (res.status === 405 || res.status === 403) {
+      const ctrl2  = new AbortController();
+      const timer2 = setTimeout(() => ctrl2.abort(), timeoutMs);
+      res = await fetch(url, {
+        method: 'GET',
+        headers: { ...HEADERS, Range: 'bytes=0-0' },
+        signal: ctrl2.signal,
+        redirect: 'follow',
+      });
+      clearTimeout(timer2);
+      return res.ok || res.status === 206;
     }
+    return res.ok;
+  } catch (_) {
+    clearTimeout(timer);
+    return false;
   }
 }
 
 async function scrapeVersions() {
-  console.error('Launching headless browser...');
-  const browser = await chromium.launch({ headless: true });
-  const page = await browser.newPage();
+  // ── Step 1: fetch main page and extract all version paths ─────────────────
+  console.error(`Fetching ${TI_BASE}...`);
+  const mainHtml = await fetchText(TI_BASE);
 
-  // Intercept every network response to capture Linux filenames from AJAX.
-  const resolved = new Map(); // 'MA.MI.PA' → 'MA.MI.PA.BUILD'
-  page.on('response', async (res) => {
-    try {
-      if (res.status() !== 200) return;
-      const text = await res.text().catch(() => '');
-      scanText(text, resolved);
-    } catch (_) {}
-  });
+  const pathRe = /CCSTUDIO\/(\d+)\.(\d+)\.(\d+)(?:\.(\d+))?/g;
+  const seen   = new Map(); // 'MA.MI.PA' → {major, minor, patch, build|null}
+  for (const m of mainHtml.matchAll(pathRe)) {
+    const [ma, mi, pa, bu] = [m[1], m[2], m[3], m[4] ?? null];
+    if (parseInt(ma) < 4) continue;
+    const key = `${ma}.${mi}.${pa}`;
+    if (!seen.has(key)) seen.set(key, { major: ma, minor: mi, patch: pa, build: bu });
+  }
+  console.error(`Found ${seen.size} unique versions (major >= 4) in main page`);
 
-  console.error(`Navigating to ${TI_URL}...`);
-  await page.goto(TI_URL, { waitUntil: 'networkidle', timeout: 60000 });
-  await page.waitForTimeout(3000);
+  // ── Step 2: for v12+ (3-part only), fetch per-version page in parallel ────
+  const needsFetch = [...seen.values()].filter(v => v.build === null);
+  console.error(`Fetching build numbers for ${needsFetch.length} v12+ versions...`);
 
-  // Dismiss cookie / consent dialog if present.
-  try {
-    const btn = page.locator('button:has-text("Accept"), button:has-text("Agree"), button:has-text("OK")').first();
-    if (await btn.count() > 0) {
-      await btn.click({ timeout: 5000 });
-      await page.waitForTimeout(1000);
+  const resolved = new Map();
+
+  // Pre-resolve v4–v11 (build already known).
+  for (const v of seen.values()) {
+    if (v.build !== null) {
+      resolved.set(`${v.major}.${v.minor}.${v.patch}`, `${v.major}.${v.minor}.${v.patch}.${v.build}`);
     }
-  } catch (_) {}
+  }
 
-  // ── Phase 1: collect version list from ti-filter-list ─────────────────────
-  // We only need (major, minor, patch) here — the build number comes from the
-  // Linux download link, not from the filter path.
-  const filterVersions = []; // [{major, minor, patch, ccValue}]
-
-  console.error('Reading ti-filter-list...');
-  try {
-    const fl = page.locator('ti-filter-list').first();
-    if (await fl.count() > 0) {
-      const raw = await fl.getAttribute('items');
-      if (raw) {
-        for (const group of JSON.parse(raw)) {
-          for (const item of group.children || []) {
-            const m = (item.value || '').match(/CCSTUDIO\/(\d+)\.(\d+)\.(\d+)/);
-            if (m && parseInt(m[1]) >= 4) {
-              filterVersions.push({ major: m[1], minor: m[2], patch: m[3], ccValue: item.value });
-            }
-          }
+  const CONCURRENCY = 5;
+  for (let i = 0; i < needsFetch.length; i += CONCURRENCY) {
+    const batch = needsFetch.slice(i, i + CONCURRENCY);
+    await Promise.all(batch.map(async v => {
+      const key = `${v.major}.${v.minor}.${v.patch}`;
+      try {
+        const html = await fetchText(`${TI_BASE}/${key}`);
+        const full = parseLinuxVersion(html);
+        if (full) {
+          resolved.set(key, full);
+          console.error(`  ${key} → ${full}`);
+        } else {
+          console.error(`  ${key} → no Linux link found`);
         }
-        console.error(`Filter list: ${filterVersions.length} entries (major >= 4)`);
+      } catch (e) {
+        console.error(`  ${key} → fetch error: ${e.message}`);
       }
-    }
-  } catch (e) {
-    console.error(`Filter list error: ${e.message}`);
+    }));
   }
 
-  // ── Phase 2: scan initial page content ────────────────────────────────────
-  // The currently-selected version's download link is already in the HTML.
-  console.error('Scanning initial page content...');
-  try {
-    scanText(await page.content(), resolved);
-  } catch (e) {
-    console.error(`Initial scan error: ${e.message}`);
+  // ── Step 3: build candidate list ──────────────────────────────────────────
+  const candidates = [];
+  for (const [key, v] of seen.entries()) {
+    const fullVersion = resolved.get(key);
+    if (!fullVersion) continue; // no Linux link found on TI page
+
+    const parts = fullVersion.split('.');
+    candidates.push({
+      version:  fullVersion,
+      major:    parts[0],
+      minor:    parts[1],
+      patch:    parts[2],
+      build:    parts[3],
+    });
   }
 
-  // ── Phase 3: click through every unresolved version ───────────────────────
-  // Clicking triggers an AJAX update of the download section; the network
-  // interceptor and subsequent page scan capture the Linux filename.
-  const unresolved = filterVersions.filter(v => !resolved.has(`${v.major}.${v.minor}.${v.patch}`));
-  console.error(`Clicking through ${unresolved.length} unresolved versions...`);
-
-  for (const v of unresolved) {
-    const key = `${v.major}.${v.minor}.${v.patch}`;
-    if (resolved.has(key)) continue; // resolved by a prior network event
-
-    console.error(`  → ${v.ccValue}`);
-    try {
-      await page.evaluate((ccValue, path) => {
-        function trigger(el) {
-          if (!el) return false;
-          el.click();
-          el.dispatchEvent(new Event('change', { bubbles: true }));
-          return true;
-        }
-
-        const fl = document.querySelector('ti-filter-list');
-        if (!fl) return false;
-
-        // A: shadow DOM
-        if (fl.shadowRoot) {
-          for (const sel of [`[value="${ccValue}"]`, `[value*="${path}"]`]) {
-            if (trigger(fl.shadowRoot.querySelector(sel))) return true;
-          }
-        }
-        // B: light DOM children
-        for (const sel of [`[value="${ccValue}"]`, `[value*="${path}"]`]) {
-          if (trigger(fl.querySelector(sel))) return true;
-        }
-        // C: set component value property directly
-        try {
-          fl.value = [ccValue];
-          fl.dispatchEvent(new CustomEvent('valueChange', { detail: { value: [ccValue] }, bubbles: true }));
-          fl.dispatchEvent(new Event('change', { bubbles: true }));
-          return true;
-        } catch (_) {}
-
-        return false;
-      }, v.ccValue, key);
-
-      // Wait for AJAX to settle, then scan.
-      await page.waitForTimeout(2500);
-      scanText(await page.content(), resolved);
-    } catch (e) {
-      console.error(`    click error: ${e.message}`);
-    }
-  }
-
-  await browser.close();
-
-  // ── Phase 4: build the final version list ─────────────────────────────────
-  const seen = new Set();
+  // ── Step 4: verify download URLs in parallel ───────────────────────────────
+  console.error(`\nVerifying ${candidates.length} download URL(s)...`);
   const versionList = [];
 
-  for (const fv of filterVersions) {
-    const key = `${fv.major}.${fv.minor}.${fv.patch}`;
-    if (seen.has(key)) continue;
-    seen.add(key);
-
-    const fullVersion = resolved.get(key);
-    const linuxSupported = !!fullVersion;
-    const parts = fullVersion ? fullVersion.split('.') : [fv.major, fv.minor, fv.patch, '0'];
-
-    versionList.push({
-      version: fullVersion || `${fv.major}.${fv.minor}.${fv.patch}.0`,
-      major: parts[0],
-      minor: parts[1],
-      patch: parts[2],
-      build: parts[3],
-      linux_supported: linuxSupported,
-    });
+  for (let i = 0; i < candidates.length; i += CONCURRENCY) {
+    const batch = candidates.slice(i, i + CONCURRENCY);
+    const results = await Promise.all(batch.map(async v => {
+      const url = buildDownloadUrl(v);
+      const ok  = await checkUrl(url);
+      console.error(`  ${v.version.padEnd(20)} ${ok ? '✓' : '✗'}  ${url}`);
+      return { ...v, linux_supported: ok };
+    }));
+    versionList.push(...results);
   }
 
   // Sort newest-first.
@@ -193,7 +162,7 @@ async function scrapeVersions() {
   if (latestLinux) latestLinux.is_latest = true;
 
   const linuxCount = versionList.filter(v => v.linux_supported).length;
-  console.error(`Done: ${versionList.length} versions total, ${linuxCount} with Linux support`);
+  console.error(`\nDone: ${versionList.length} versions total, ${linuxCount} with Linux support`);
 
   console.log(JSON.stringify(versionList));
 }
