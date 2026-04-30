@@ -91,15 +91,16 @@ async function scrapeVersions() {
     console.error(`Strategy 1 error: ${e.message}`);
   }
 
-  // Strategy 2: Fallback - extract from page content
-  if (versionList.length === 0) {
-    console.error('Strategy 2 (fallback): Extracting from page content...');
+  // Strategy 2: Always scan page content for full 4-part versions.
+  // This augments Strategy 1 when v20+ filter-list items only expose a 3-part path
+  // (e.g. "CCSTUDIO/20.5.0") and the real build number lives in download URLs.
+  try {
+    console.error('Strategy 2: Scanning page content for 4-part version numbers...');
     const pageContent = await page.content();
     const versionMatches = pageContent.matchAll(/(\d+)\.(\d+)\.(\d+)\.(\d+)/g);
 
     for (const match of versionMatches) {
       const major = parseInt(match[1]);
-      // Filter out non-version numbers (e.g., dates, random numbers)
       if (major >= 7 && major <= 30) {
         versionList.push({
           version: `${match[1]}.${match[2]}.${match[3]}.${match[4]}`,
@@ -110,14 +111,23 @@ async function scrapeVersions() {
         });
       }
     }
+  } catch (e) {
+    console.error(`Strategy 2 error: ${e.message}`);
   }
 
   await browser.close();
 
-  // Deduplicate versions
-  const uniqueVersions = Array.from(
-    new Map(versionList.map(v => [v.version, v])).values()
-  );
+  // Deduplicate by major.minor.patch, preferring entries with a real build number
+  // over placeholder '0' added when the filter list only exposed a 3-part path.
+  const versionMap = new Map();
+  for (const v of versionList) {
+    const key = `${v.major}.${v.minor}.${v.patch}`;
+    const existing = versionMap.get(key);
+    if (!existing || (existing.build === '0' && v.build !== '0')) {
+      versionMap.set(key, v);
+    }
+  }
+  const uniqueVersions = Array.from(versionMap.values());
 
   // Sort by version (newest first)
   uniqueVersions.sort((a, b) => {
