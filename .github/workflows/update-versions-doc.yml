@@ -77,13 +77,13 @@ jobs:
         run: |
           echo "Generating version tables..."
 
-          # Full table for docs/versions.md — all linux_supported versions, newest first
+          # Full table for docs/versions.md — all versions, newest first
           {
             echo "| Version | Status | TI Download |"
             echo "|---------|--------|-------------|"
 
             echo "$VERSIONS" | jq -r '
-              [.[] | select(.linux_supported == true)]
+              [.[]]
               | sort_by([.major, .minor, .patch, .build] | map(tonumber))
               | reverse[]
               | "\(.version)\t\(.public_download)"
