@@ -67,7 +67,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: .
-          push: true
+          push: false  # TESTING: Set to true before production
           build-args: |
             CCS_VERSION=${{ matrix.version_info.version }}
             MAJOR_VER=${{ matrix.version_info.major }}
@@ -79,10 +79,12 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
           platforms: linux/amd64
+          load: true  # Load image locally for testing
 
   tag-latest:
     needs: [detect-versions, build-and-push]
     runs-on: ubuntu-latest
+    if: false  # TESTING: Disable for testing, enable before production
     steps:
       - name: Log in to Docker Hub
         uses: docker/login-action@v3
