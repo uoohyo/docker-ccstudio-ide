@@ -1,0 +1,83 @@
+name: Check for New CCS Version
+
+on:
+  schedule:
+    # Run every Sunday at 00:00 UTC
+    - cron: '0 0 * * 0'
+  workflow_dispatch:
+
+jobs:
+  check-new-version:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Get latest version from TI
+        id: ti-version
+        run: |
+          VERSION=$(bash scripts/parse-versions.sh | jq -r '.[0].version')
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+          echo "TI latest version: ${VERSION}"
+
+      - name: Check if version exists on Docker Hub
+        id: hub-check
+        run: |
+          VERSION="${{ steps.ti-version.outputs.version }}"
+
+          # Check if tag exists on Docker Hub
+          if docker manifest inspect uoohyo/ccstudio-ide:${VERSION} > /dev/null 2>&1; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+            echo "Version ${VERSION} already exists on Docker Hub"
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+            echo "Version ${VERSION} is NEW - will trigger build"
+          fi
+
+      - name: Trigger build for new version
+        if: steps.hub-check.outputs.exists == 'false'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const version = '${{ steps.ti-version.outputs.version }}';
+
+            await github.rest.actions.createWorkflowDispatch({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              workflow_id: 'build-all-versions.yml',
+              ref: 'main',
+              inputs: {
+                versions: JSON.stringify([{
+                  version: version,
+                  major: version.split('.')[0],
+                  minor: version.split('.')[1],
+                  patch: version.split('.')[2],
+                  build: version.split('.')[3],
+                  is_latest: true
+                }])
+              }
+            });
+
+            console.log(`Triggered build for new version: ${version}`);
+
+      - name: Create issue for new version
+        if: steps.hub-check.outputs.exists == 'false'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const version = '${{ steps.ti-version.outputs.version }}';
+
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `New CCS version detected: ${version}`,
+              body: `A new CCS version **${version}** has been detected and is being built automatically.\n\n- TI Download Page: https://www.ti.com/tool/download/CCSTUDIO\n- Build workflow: [View workflow run](https://github.com/${context.repo.owner}/${context.repo.repo}/actions/workflows/build-all-versions.yml)\n\nThis issue was created automatically by the version check workflow.`,
+              labels: ['automation', 'new-version']
+            });
+
+      - name: No new version
+        if: steps.hub-check.outputs.exists == 'true'
+        run: |
+          echo "No new version detected. Current latest: ${{ steps.ti-version.outputs.version }}"
