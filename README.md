@@ -43,7 +43,15 @@ Run the pulled image. By default, the image is configured with the latest versio
 
     docker run -it uoohyo/ccstudio-ide:latest
 
-> **Estimated startup time:** CCS installer is approximately 1.4 GB. Expect **15–30 minutes** on first run depending on network speed and system performance (download ~2–20 min + installation ~10 min).
+> **Estimated startup time:** Expect **~5 minutes** on first run with optimized parallel download (download ~2 min + installation ~3 min). Time may vary depending on network speed and system performance.
+
+### Performance
+
+The download process is optimized using [aria2](https://aria2.github.io/) with 16 parallel connections, providing **73.5% faster** installation compared to traditional single-connection downloads:
+
+- **Traditional (wget)**: 17m 40s
+- **Optimized (aria2)**: 4m 41s
+- **Improvement**: 73.5% faster, saving 12m 59s
 
 ### Environments
 
@@ -142,7 +150,7 @@ For more detailed commands and explanations, visit [this link](https://software-
 
 [MIT License](./LICENSE)
 
-Copyright (c) 2024 [uoohyo](https://github.com/uoohyo)
+Copyright (c) 2024-2026 [uoohyo](https://github.com/uoohyo)
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
