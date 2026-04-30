@@ -45,34 +45,50 @@ jobs:
 
           echo "Found $(wc -l < /tmp/versions.txt) versions"
 
-      - name: Generate version table
+      - name: Generate version tables
         run: |
-          echo "Generating version table..."
+          echo "Generating version tables..."
 
-          # Table header
+          # Full table for docs/versions.md
           {
             echo "| Version | Build Status | TI Download |"
             echo "|---------|--------------|-------------|"
-          } > /tmp/table.md
+          } > /tmp/table-full.md
 
-          # Generate rows
+          # Top 6 table for README.md (HTML format)
+          echo "" > /tmp/table-readme.md
+
+          COUNT=0
           while IFS= read -r version; do
             if [ -z "$version" ]; then
               continue
             fi
 
+            MAJOR=$(echo "$version" | cut -d'.' -f1)
+
             # Build status badge
             BUILD_BADGE="![Build](https://github.com/${{ github.repository }}/workflows/Build%20All%20CCS%20Versions/badge.svg)"
 
-            # TI download link - handle both 3-part and 4-part versions
+            # TI download link
             TI_LINK="https://www.ti.com/tool/download/CCSTUDIO/${version}"
 
-            # Add table row
-            echo "| \`${version}\` | ${BUILD_BADGE} | [Download](${TI_LINK}) |" >> /tmp/table.md
+            # Add to full table (markdown format)
+            echo "| \`${version}\` | ${BUILD_BADGE} | [Download](${TI_LINK}) |" >> /tmp/table-full.md
+
+            # Add to README table (HTML format, top 6 only)
+            if [ $COUNT -lt 6 ]; then
+              # Test workflow badge
+              TEST_BADGE="https://img.shields.io/github/actions/workflow/status/${{ github.repository }}/test-v${MAJOR}.yml?branch=main&label=&style=flat-square"
+              TEST_LINK="https://github.com/${{ github.repository }}/actions/workflows/test-v${MAJOR}.yml"
+
+              echo "        <tr><td>v${version}</td><td><a href=\"${TEST_LINK}\"><img src=\"${TEST_BADGE}\" alt=\"v${MAJOR}\" /></a></td></tr>" >> /tmp/table-readme.md
+              COUNT=$((COUNT + 1))
+            fi
 
           done < /tmp/versions.txt
 
-          echo "Table generated with $(wc -l < /tmp/table.md) rows"
+          echo "Full table: $(wc -l < /tmp/table-full.md) rows"
+          echo "README table: $(wc -l < /tmp/table-readme.md) rows"
 
       - name: Update versions.md
         run: |
@@ -82,7 +98,7 @@ jobs:
           cp docs/template/versions.template.md docs/versions.md
 
           # Read generated table
-          TABLE=$(cat /tmp/table.md)
+          TABLE=$(cat /tmp/table-full.md)
 
           # Current timestamp
           TIMESTAMP=$(date -u '+%Y-%m-%d %H:%M:%S UTC')
@@ -112,17 +128,47 @@ jobs:
 
           echo "versions.md updated successfully"
 
+      - name: Update README.md
+        run: |
+          echo "Updating README.md..."
+
+          # Copy template
+          cp docs/template/README.template.md README.md
+
+          # Read generated README table
+          TABLE=$(cat /tmp/table-readme.md)
+
+          # Replace content using awk
+          awk -v table="$TABLE" '
+            /<!-- VERSION_TABLE_START -->/ {
+              print
+              print table
+              skip=1
+              next
+            }
+            /<!-- VERSION_TABLE_END -->/ {
+              skip=0
+              print
+              next
+            }
+            !skip
+          ' README.md > README.md.tmp
+
+          mv README.md.tmp README.md
+
+          echo "README.md updated successfully"
+
       - name: Commit and push
         run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
 
-          git add docs/versions.md
+          git add README.md docs/versions.md
 
           if git diff --staged --quiet; then
             echo "No changes to commit"
           else
-            git commit -m "📝 auto-update versions documentation [skip ci]"
+            git commit -m "📝 auto-update README and versions documentation [skip ci]"
             git push
-            echo "Versions documentation updated"
+            echo "Documentation updated successfully"
           fi
