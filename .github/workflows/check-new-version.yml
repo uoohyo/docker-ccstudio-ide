@@ -56,7 +56,8 @@ jobs:
           ALL_VERSIONS=$(bash .github/scripts/parse-versions.sh)
           LATEST_VERSION=$(echo "$ALL_VERSIONS" | jq -r '.[0].version')
 
-          echo "versions=${ALL_VERSIONS}" >> $GITHUB_OUTPUT
+          DELIMITER=$(openssl rand -hex 8)
+          { echo "versions<<${DELIMITER}"; echo "${ALL_VERSIONS}"; echo "${DELIMITER}"; } >> $GITHUB_OUTPUT
           echo "latest=${LATEST_VERSION}" >> $GITHUB_OUTPUT
           echo "TI latest version: ${LATEST_VERSION}"
           echo "Total TI versions: $(echo "$ALL_VERSIONS" | jq '. | length')"

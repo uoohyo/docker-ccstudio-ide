@@ -9,9 +9,14 @@ on:
 jobs:
   update-versions:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      issues: write
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Fetch Docker Hub versions
         id: fetch-versions

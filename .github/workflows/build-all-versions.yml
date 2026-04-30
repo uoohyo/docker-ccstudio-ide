@@ -37,7 +37,8 @@ jobs:
             VERSIONS=$(bash .github/scripts/parse-versions.sh)
           fi
 
-          echo "versions=${VERSIONS}" >> $GITHUB_OUTPUT
+          DELIMITER=$(openssl rand -hex 8)
+          { echo "versions<<${DELIMITER}"; echo "${VERSIONS}"; echo "${DELIMITER}"; } >> $GITHUB_OUTPUT
 
           # Extract latest version
           LATEST=$(echo "$VERSIONS" | jq -r '.[0].version')

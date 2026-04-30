@@ -25,5 +25,5 @@ process.stdin.on('end', () => {
 
   if (versions.length > 0) versions[0].is_latest = true;
 
-  console.log(JSON.stringify(versions, null, 2));
+  console.log(JSON.stringify(versions));
 });
