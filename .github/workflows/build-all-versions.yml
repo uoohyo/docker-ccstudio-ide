@@ -18,6 +18,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       versions: ${{ steps.parse.outputs.versions }}
+      build_versions: ${{ steps.parse.outputs.build_versions }}
       latest_version: ${{ steps.parse.outputs.latest_version }}
     steps:
       - name: Checkout repository
@@ -36,26 +37,32 @@ jobs:
           if [ -n "${{ github.event.inputs.versions }}" ]; then
             VERSIONS='${{ github.event.inputs.versions }}'
           else
-            # Parse versions (from web or versions.json)
             VERSIONS=$(bash .github/scripts/parse-versions.sh)
           fi
 
+          # All versions (for documentation / check-new-version.yml)
           DELIMITER=$(openssl rand -hex 8)
           { echo "versions<<${DELIMITER}"; echo "${VERSIONS}"; echo "${DELIMITER}"; } >> $GITHUB_OUTPUT
 
-          # Extract latest version
-          LATEST=$(echo "$VERSIONS" | jq -r '.[0].version')
+          # Linux-supported versions only (for the build matrix)
+          BUILD_VERSIONS=$(echo "$VERSIONS" | jq '[.[] | select(.linux_supported != false)]')
+          DELIMITER2=$(openssl rand -hex 8)
+          { echo "build_versions<<${DELIMITER2}"; echo "${BUILD_VERSIONS}"; echo "${DELIMITER2}"; } >> $GITHUB_OUTPUT
+
+          # Latest linux-supported version for the latest tag
+          LATEST=$(echo "$BUILD_VERSIONS" | jq -r '.[0].version')
           echo "latest_version=${LATEST}" >> $GITHUB_OUTPUT
 
-          echo "Detected versions: ${VERSIONS}"
-          echo "Latest version: ${LATEST}"
+          echo "Total versions: $(echo "$VERSIONS" | jq '. | length')"
+          echo "Linux-supported: $(echo "$BUILD_VERSIONS" | jq '. | length')"
+          echo "Latest: ${LATEST}"
 
   build-and-push:
     needs: detect-versions
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        version_info: ${{ fromJson(needs.detect-versions.outputs.versions) }}
+        version_info: ${{ fromJson(needs.detect-versions.outputs.build_versions) }}
       fail-fast: false
     steps:
       - name: Checkout repository
