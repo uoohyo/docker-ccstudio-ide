@@ -1,0 +1,12 @@
+{
+  "name": "ccs-version-scraper",
+  "version": "1.0.0",
+  "description": "Scrape CCS versions from TI website",
+  "private": true,
+  "scripts": {
+    "scrape": "node scrape-versions.js"
+  },
+  "dependencies": {
+    "playwright": "^1.40.0"
+  }
+}

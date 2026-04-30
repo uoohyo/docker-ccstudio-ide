@@ -9,9 +9,14 @@ on:
   workflow_dispatch:
     inputs:
       versions:
-        description: 'Versions to build (JSON array, leave empty for latest)'
+        description: 'Versions to build (JSON array, leave empty for auto-detect)'
         required: false
         default: ''
+      use_scraper:
+        description: 'Use web scraper to detect versions (requires Playwright)'
+        required: false
+        type: boolean
+        default: false
 
 jobs:
   detect-versions:
@@ -23,14 +28,22 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Setup Node.js (if using scraper)
+        if: github.event.inputs.use_scraper == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
       - name: Parse CCS versions
         id: parse
+        env:
+          USE_SCRAPER: ${{ github.event.inputs.use_scraper || 'false' }}
         run: |
           # Use manual input if provided
           if [ -n "${{ github.event.inputs.versions }}" ]; then
             VERSIONS='${{ github.event.inputs.versions }}'
           else
-            # Parse latest version from TI website
+            # Parse versions (from web or versions.json)
             VERSIONS=$(bash scripts/parse-versions.sh)
           fi
 
