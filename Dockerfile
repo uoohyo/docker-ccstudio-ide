@@ -1,7 +1,7 @@
 # ============================================
 # Stage 1: Download CCS Installer
 # ============================================
-FROM ubuntu:22.04 as downloader
+FROM ubuntu:22.04 AS downloader
 
 # CCS Version (can be overridden at build time)
 ARG CCS_VERSION=20.5.0.00028
