@@ -22,12 +22,28 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Scrape all CCS versions from TI
+        id: scrape
+        run: |
+          echo "Fetching all versions from TI website..."
+          ALL_VERSIONS=$(bash .github/scripts/parse-versions.sh)
+
+          DELIMITER=$(openssl rand -hex 8)
+          { echo "versions<<${DELIMITER}"; echo "${ALL_VERSIONS}"; echo "${DELIMITER}"; } >> $GITHUB_OUTPUT
+          echo "Total versions: $(echo "$ALL_VERSIONS" | jq '. | length')"
+          echo "Linux-supported: $(echo "$ALL_VERSIONS" | jq '[.[] | select(.linux_supported == true)] | length')"
+          echo "Publicly downloadable: $(echo "$ALL_VERSIONS" | jq '[.[] | select(.public_download == true)] | length')"
+
       - name: Fetch Docker Hub versions
         id: fetch-versions
         run: |
           echo "Fetching versions from Docker Hub..."
 
-          # Fetch all version tags
           ALL_TAGS=""
           PAGE=1
 
@@ -49,51 +65,64 @@ jobs:
             PAGE=$((PAGE + 1))
           done
 
-          # Sort versions (newest first)
-          echo "$ALL_TAGS" | grep -v '^$' | sort -Vr > /tmp/versions.txt
-
-          echo "Found $(wc -l < /tmp/versions.txt) versions"
+          TAGS_JSON=$(echo "$ALL_TAGS" | grep -v '^$' | jq -R . | jq -s . || echo '[]')
+          DELIMITER=$(openssl rand -hex 8)
+          { echo "tags<<${DELIMITER}"; echo "${TAGS_JSON}"; echo "${DELIMITER}"; } >> $GITHUB_OUTPUT
+          echo "Docker Hub tags: $(echo "$TAGS_JSON" | jq '. | length')"
 
       - name: Generate version tables
+        env:
+          VERSIONS: ${{ steps.scrape.outputs.versions }}
+          DOCKER_TAGS: ${{ steps.fetch-versions.outputs.tags }}
         run: |
           echo "Generating version tables..."
 
-          # Full table for docs/versions.md
+          # Full table for docs/versions.md — all versions, newest first
           {
-            echo "| Version | Build Status | TI Download |"
-            echo "|---------|--------------|-------------|"
+            echo "| Version | Status | TI Download |"
+            echo "|---------|--------|-------------|"
+
+            echo "$VERSIONS" | jq -r '
+              [.[]]
+              | sort_by([.major, .minor, .patch, .build] | map(tonumber))
+              | reverse[]
+              | "\(.version)\t\(.public_download)"
+            ' | while IFS=$'\t' read -r version public_dl; do
+              MAJOR=$(echo "$version" | cut -d'.' -f1)
+              MINOR=$(echo "$version" | cut -d'.' -f2)
+              PATCH=$(echo "$version" | cut -d'.' -f3)
+              TI_LINK="https://www.ti.com/tool/download/CCSTUDIO/${MAJOR}.${MINOR}.${PATCH}"
+
+              if echo "$DOCKER_TAGS" | jq -e --arg v "$version" '. | index($v) != null' > /dev/null 2>&1; then
+                STATUS="✅ Available"
+              elif [ "$public_dl" = "true" ]; then
+                STATUS="🔨 Not Built Yet"
+              else
+                STATUS="⚠️ Not Supported"
+              fi
+
+              echo "| \`${version}\` | ${STATUS} | [Download](${TI_LINK}) |"
+            done
           } > /tmp/table-full.md
 
-          # Top 6 table for README.md (HTML format)
+          # README table — top 6 available (public_download: true, on Docker Hub), newest first
           echo "" > /tmp/table-readme.md
-
           COUNT=0
-          while IFS= read -r version; do
-            if [ -z "$version" ]; then
-              continue
-            fi
 
-            MAJOR=$(echo "$version" | cut -d'.' -f1)
-
-            # Build status badge
-            BUILD_BADGE="![Build](https://github.com/${{ github.repository }}/workflows/Build%20All%20CCS%20Versions/badge.svg)"
-
-            # TI download link
-            TI_LINK="https://www.ti.com/tool/download/CCSTUDIO/${version}"
-
-            # Add to full table (markdown format)
-            echo "| \`${version}\` | ${BUILD_BADGE} | [Download](${TI_LINK}) |" >> /tmp/table-full.md
-
-            # Add to README table (HTML format, top 6 only)
-            if [ $COUNT -lt 6 ]; then
+          echo "$VERSIONS" | jq -r '
+            [.[] | select(.public_download == true)]
+            | sort_by([.major, .minor, .patch, .build] | map(tonumber))
+            | reverse[]
+            | .version
+          ' | while read -r version && [ $COUNT -lt 6 ]; do
+            if echo "$DOCKER_TAGS" | jq -e --arg v "$version" '. | index($v) != null' > /dev/null 2>&1; then
+              MAJOR=$(echo "$version" | cut -d'.' -f1)
               BUILD_BADGE="https://img.shields.io/github/actions/workflow/status/${{ github.repository }}/build-all-versions.yml?branch=main&label=v${MAJOR}&style=flat-square"
               BUILD_LINK="https://github.com/${{ github.repository }}/actions/workflows/build-all-versions.yml"
-
               echo "        <tr><td>v${version}</td><td><a href=\"${BUILD_LINK}\"><img src=\"${BUILD_BADGE}\" alt=\"v${MAJOR}\" /></a></td></tr>" >> /tmp/table-readme.md
               COUNT=$((COUNT + 1))
             fi
-
-          done < /tmp/versions.txt
+          done
 
           echo "Full table: $(wc -l < /tmp/table-full.md) rows"
           echo "README table: $(wc -l < /tmp/table-readme.md) rows"
@@ -101,17 +130,10 @@ jobs:
       - name: Update versions.md
         run: |
           echo "Updating docs/versions.md..."
-
-          # Copy template
           cp docs/template/versions.template.md docs/versions.md
-
-          # Read generated table
           TABLE=$(cat /tmp/table-full.md)
-
-          # Current timestamp
           TIMESTAMP=$(date -u '+%Y-%m-%d %H:%M:%S UTC')
 
-          # Replace content using awk
           awk -v table="$TABLE" -v timestamp="$TIMESTAMP" '
             /<!-- VERSION_TABLE_START -->/ {
               print
@@ -133,20 +155,14 @@ jobs:
           ' docs/versions.md > docs/versions.md.tmp
 
           mv docs/versions.md.tmp docs/versions.md
-
           echo "versions.md updated successfully"
 
       - name: Update README.md
         run: |
           echo "Updating README.md..."
-
-          # Copy template
           cp docs/template/README.template.md README.md
-
-          # Read generated README table
           TABLE=$(cat /tmp/table-readme.md)
 
-          # Replace content using awk
           awk -v table="$TABLE" '
             /<!-- VERSION_TABLE_START -->/ {
               print
@@ -163,14 +179,12 @@ jobs:
           ' README.md > README.md.tmp
 
           mv README.md.tmp README.md
-
           echo "README.md updated successfully"
 
       - name: Commit and push
         run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
-
           git add README.md docs/versions.md
 
           if git diff --staged --quiet; then
@@ -187,7 +201,6 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            // Find open issues with "building" label
             const issues = await github.rest.issues.listForRepo({
               owner: context.repo.owner,
               repo: context.repo.repo,
@@ -200,11 +213,9 @@ jobs:
               return;
             }
 
-            // Process each building issue
             for (const issue of issues.data) {
               console.log(`Processing issue #${issue.number}`);
 
-              // Add success comment
               await github.rest.issues.createComment({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
@@ -212,7 +223,6 @@ jobs:
                 body: `✅ **Build completed successfully!**\n\nAll versions have been built and pushed to Docker Hub.\n\n- 📦 [Docker Hub Repository](https://hub.docker.com/r/uoohyo/ccstudio-ide/tags)\n- 📋 [Version Documentation](https://github.com/${context.repo.owner}/${context.repo.repo}/blob/main/docs/versions.md)\n- 📝 README has been updated with the latest versions\n\nThis issue is now closed automatically.`
               });
 
-              // Add "completed" label
               await github.rest.issues.addLabels({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
@@ -220,7 +230,6 @@ jobs:
                 labels: ['completed']
               });
 
-              // Remove "building" label
               await github.rest.issues.removeLabel({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
@@ -228,7 +237,6 @@ jobs:
                 name: 'building'
               });
 
-              // Close issue
               await github.rest.issues.update({
                 owner: context.repo.owner,
                 repo: context.repo.repo,

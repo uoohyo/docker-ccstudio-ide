@@ -90,8 +90,9 @@ jobs:
           TI_VERSIONS='${{ steps.ti-versions.outputs.versions }}'
           HUB_TAGS='${{ steps.hub-versions.outputs.tags }}'
 
-          # Find versions that exist on TI but not on Docker Hub
+          # Find publicly downloadable versions that exist on TI but not on Docker Hub
           MISSING=$(echo "$TI_VERSIONS" | jq --argjson hub "$HUB_TAGS" '
+            map(select(.public_download == true)) |
             map(select(.version as $v | $hub | index($v) | not))
           ')
 
