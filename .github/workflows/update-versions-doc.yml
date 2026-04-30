@@ -1,0 +1,231 @@
+name: Update Versions Documentation
+
+on:
+  workflow_run:
+    workflows: ["Build All CCS Versions"]
+    types: [completed]
+  workflow_dispatch:
+
+jobs:
+  update-versions:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Fetch Docker Hub versions
+        id: fetch-versions
+        run: |
+          echo "Fetching versions from Docker Hub..."
+
+          # Fetch all version tags
+          ALL_TAGS=""
+          PAGE=1
+
+          while true; do
+            RESPONSE=$(curl -s "https://hub.docker.com/v2/repositories/uoohyo/ccstudio-ide/tags?page=${PAGE}&page_size=100")
+            TAGS=$(echo "$RESPONSE" | jq -r '.results[].name' | grep -E '^[0-9]+\.[0-9]+\.[0-9]+(\.[0-9]+)?$' || echo "")
+
+            if [ -z "$TAGS" ]; then
+              break
+            fi
+
+            ALL_TAGS="${ALL_TAGS}${TAGS}"$'\n'
+
+            NEXT=$(echo "$RESPONSE" | jq -r '.next')
+            if [ "$NEXT" = "null" ]; then
+              break
+            fi
+
+            PAGE=$((PAGE + 1))
+          done
+
+          # Sort versions (newest first)
+          echo "$ALL_TAGS" | grep -v '^$' | sort -Vr > /tmp/versions.txt
+
+          echo "Found $(wc -l < /tmp/versions.txt) versions"
+
+      - name: Generate version tables
+        run: |
+          echo "Generating version tables..."
+
+          # Full table for docs/versions.md
+          {
+            echo "| Version | Build Status | TI Download |"
+            echo "|---------|--------------|-------------|"
+          } > /tmp/table-full.md
+
+          # Top 6 table for README.md (HTML format)
+          echo "" > /tmp/table-readme.md
+
+          COUNT=0
+          while IFS= read -r version; do
+            if [ -z "$version" ]; then
+              continue
+            fi
+
+            MAJOR=$(echo "$version" | cut -d'.' -f1)
+
+            # Build status badge
+            BUILD_BADGE="![Build](https://github.com/${{ github.repository }}/workflows/Build%20All%20CCS%20Versions/badge.svg)"
+
+            # TI download link
+            TI_LINK="https://www.ti.com/tool/download/CCSTUDIO/${version}"
+
+            # Add to full table (markdown format)
+            echo "| \`${version}\` | ${BUILD_BADGE} | [Download](${TI_LINK}) |" >> /tmp/table-full.md
+
+            # Add to README table (HTML format, top 6 only)
+            if [ $COUNT -lt 6 ]; then
+              BUILD_BADGE="https://img.shields.io/github/actions/workflow/status/${{ github.repository }}/build-all-versions.yml?branch=main&label=v${MAJOR}&style=flat-square"
+              BUILD_LINK="https://github.com/${{ github.repository }}/actions/workflows/build-all-versions.yml"
+
+              echo "        <tr><td>v${version}</td><td><a href=\"${BUILD_LINK}\"><img src=\"${BUILD_BADGE}\" alt=\"v${MAJOR}\" /></a></td></tr>" >> /tmp/table-readme.md
+              COUNT=$((COUNT + 1))
+            fi
+
+          done < /tmp/versions.txt
+
+          echo "Full table: $(wc -l < /tmp/table-full.md) rows"
+          echo "README table: $(wc -l < /tmp/table-readme.md) rows"
+
+      - name: Update versions.md
+        run: |
+          echo "Updating docs/versions.md..."
+
+          # Copy template
+          cp docs/template/versions.template.md docs/versions.md
+
+          # Read generated table
+          TABLE=$(cat /tmp/table-full.md)
+
+          # Current timestamp
+          TIMESTAMP=$(date -u '+%Y-%m-%d %H:%M:%S UTC')
+
+          # Replace content using awk
+          awk -v table="$TABLE" -v timestamp="$TIMESTAMP" '
+            /<!-- VERSION_TABLE_START -->/ {
+              print
+              print ""
+              print table
+              print ""
+              skip=1
+              next
+            }
+            /<!-- VERSION_TABLE_END -->/ {
+              skip=0
+              print
+              next
+            }
+            /<!-- LAST_UPDATE -->/ {
+              gsub(/<!-- LAST_UPDATE -->/, timestamp)
+            }
+            !skip
+          ' docs/versions.md > docs/versions.md.tmp
+
+          mv docs/versions.md.tmp docs/versions.md
+
+          echo "versions.md updated successfully"
+
+      - name: Update README.md
+        run: |
+          echo "Updating README.md..."
+
+          # Copy template
+          cp docs/template/README.template.md README.md
+
+          # Read generated README table
+          TABLE=$(cat /tmp/table-readme.md)
+
+          # Replace content using awk
+          awk -v table="$TABLE" '
+            /<!-- VERSION_TABLE_START -->/ {
+              print
+              print table
+              skip=1
+              next
+            }
+            /<!-- VERSION_TABLE_END -->/ {
+              skip=0
+              print
+              next
+            }
+            !skip
+          ' README.md > README.md.tmp
+
+          mv README.md.tmp README.md
+
+          echo "README.md updated successfully"
+
+      - name: Commit and push
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+
+          git add README.md docs/versions.md
+
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "📝 auto-update README and versions documentation [skip ci]"
+            git push
+            echo "Documentation updated successfully"
+          fi
+
+      - name: Close building issue
+        if: success()
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            // Find open issues with "building" label
+            const issues = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: 'building'
+            });
+
+            if (issues.data.length === 0) {
+              console.log('No building issues found');
+              return;
+            }
+
+            // Process each building issue
+            for (const issue of issues.data) {
+              console.log(`Processing issue #${issue.number}`);
+
+              // Add success comment
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issue.number,
+                body: `✅ **Build completed successfully!**\n\nAll versions have been built and pushed to Docker Hub.\n\n- 📦 [Docker Hub Repository](https://hub.docker.com/r/uoohyo/ccstudio-ide/tags)\n- 📋 [Version Documentation](https://github.com/${context.repo.owner}/${context.repo.repo}/blob/main/docs/versions.md)\n- 📝 README has been updated with the latest versions\n\nThis issue is now closed automatically.`
+              });
+
+              // Add "completed" label
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issue.number,
+                labels: ['completed']
+              });
+
+              // Remove "building" label
+              await github.rest.issues.removeLabel({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issue.number,
+                name: 'building'
+              });
+
+              // Close issue
+              await github.rest.issues.update({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issue.number,
+                state: 'closed'
+              });
+
+              console.log(`Issue #${issue.number} closed successfully`);
+            }

@@ -20,7 +20,6 @@ $$$$$$$  |\$$$$$$  |\$$$$$$$\ $$ | \$$\ \$$$$$$$\ $$ |            \$$$$$$  |\$$$
 EOF
 
 # Variables
-CCS_URL="https://dr-download.ti.com/software-development/ide-configuration-compiler-or-debugger/MD-J1VdearkvK/"
 VER="${MAJOR_VER}.${MINOR_VER}.${PATCH_VER}.${BUILD_VER}"
 # v9+: installs to /opt/ti/ccs/eclipse; v8-: installs to /opt/ti/ccsv<MAJOR>/eclipse
 if [ "${MAJOR_VER}" -ge 9 ]; then
@@ -60,8 +59,8 @@ _show_install_logs() {
     echo "========================"
 }
 
-# Download and Install CCS
-echo ">>> Downloading CCS ${VER}..."
+# Install CCS from pre-downloaded and extracted files
+echo ">>> Using pre-downloaded and extracted CCS ${VER} installer..."
 if [ "${MAJOR_VER}" -ge 20 ]; then
     ln -sf /bin/true /usr/local/bin/udevadm
     ln -sf /bin/true /sbin/start_udev
@@ -71,21 +70,11 @@ if [ "${MAJOR_VER}" -ge 20 ]; then
     ln -sf /bin/true /sbin/rmmod
     mkdir -p /etc/udev/rules.d /run/udev /lib/modules
 
-    wget --timeout=300 --tries=3 "${CCS_URL}${MAJOR_VER}.${MINOR_VER}.${PATCH_VER}/CCS_${VER}_linux.zip"
-    echo ">>> Extracting..."
-    unzip "CCS_${VER}_linux.zip"
-    chmod -R 755 "CCS_${VER}_linux"
     echo ">>> Installing CCS ${VER} (this may take a while)..."
-    cd "CCS_${VER}_linux"
+    cd "/opt/ccs-installer/CCS_${VER}_linux"
     chmod +x "ccs_setup_${VER}.run"
     "./ccs_setup_${VER}.run" --mode unattended --enable-components "${COMPONENTS}" --prefix /opt/ti 2>&1 | tee "${INSTALL_LOG}"
 else
-    # v12: URL path is 3-part (MAJOR.MINOR.PATCH); v11 and below: 4-part (MAJOR.MINOR.PATCH.BUILD)
-    if [ "${MAJOR_VER}" -ge 12 ]; then
-        CCS_DL_PATH="${MAJOR_VER}.${MINOR_VER}.${PATCH_VER}"
-    else
-        CCS_DL_PATH="${VER}"
-    fi
     # Driver install scripts (bh_driver_install.sh for v7-v9, ti_permissions_install.sh for v10-v12)
     # copy udev rules then try to restart the udev service, which doesn't exist in Docker:
     #   v7-v9:   'service udev restart'  → "udev: unrecognized service"
@@ -97,20 +86,17 @@ else
     printf '#!/bin/sh\nexit 0\n' > /etc/init.d/udev && chmod 755 /etc/init.d/udev
     ln -sf /bin/true /usr/local/bin/udevadm
     ln -sf /bin/true /usr/local/bin/systemctl
-    wget --timeout=300 --tries=3 "${CCS_URL}${CCS_DL_PATH}/CCS${VER}_linux-x64.tar.gz"
-    echo ">>> Extracting..."
-    tar -zxf "CCS${VER}_linux-x64.tar.gz"
-    chmod -R 755 "CCS${VER}_linux-x64"
+
     echo ">>> Installing CCS ${VER} (this may take a while)..."
     # v10+: new installer (.run, supports --enable-components with PF_* IDs)
     # v9-:  old BitRock installer; binary name varies (linux64_*.bin or *.run), use find to detect
     if [ "${MAJOR_VER}" -ge 10 ]; then
-        "./CCS${VER}_linux-x64/ccs_setup_${VER}.run" \
+        "/opt/ccs-installer/CCS${VER}_linux-x64/ccs_setup_${VER}.run" \
             --mode unattended --enable-components "${COMPONENTS}" --prefix /opt/ti \
             --install-BlackHawk false --install-Segger false 2>&1 | tee "${INSTALL_LOG}"
     else
         echo ">>> Note: --enable-components is not supported for CCS v9 and below. Installing all components."
-        INSTALLER_BIN=$(find "./CCS${VER}_linux-x64" -maxdepth 1 \( -name "*.bin" -o -name "*.run" \) | sort | head -1)
+        INSTALLER_BIN=$(find "/opt/ccs-installer/CCS${VER}_linux-x64" -maxdepth 1 \( -name "*.bin" -o -name "*.run" \) | sort | head -1)
         "${INSTALLER_BIN}" \
             --mode unattended --prefix /opt/ti \
             --install-BlackHawk false --install-Segger false 2>&1 | tee "${INSTALL_LOG}"
@@ -139,7 +125,7 @@ echo ">>> CCS ${VER} installation complete."
 # Cleanup
 echo ">>> Cleaning up..."
 cd /home
-rm -rf /ccs_install
+rm -rf /opt/ccs-installer
 
 echo ""
 echo "=== CCS ${VER} is ready. ==="
