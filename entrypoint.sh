@@ -20,7 +20,6 @@ $$$$$$$  |\$$$$$$  |\$$$$$$$\ $$ | \$$\ \$$$$$$$\ $$ |            \$$$$$$  |\$$$
 EOF
 
 # Variables
-CCS_URL="https://dr-download.ti.com/software-development/ide-configuration-compiler-or-debugger/MD-J1VdearkvK/"
 VER="${MAJOR_VER}.${MINOR_VER}.${PATCH_VER}.${BUILD_VER}"
 # v9+: installs to /opt/ti/ccs/eclipse; v8-: installs to /opt/ti/ccsv<MAJOR>/eclipse
 if [ "${MAJOR_VER}" -ge 9 ]; then
@@ -60,8 +59,8 @@ _show_install_logs() {
     echo "========================"
 }
 
-# Install CCS from pre-downloaded files
-echo ">>> Using pre-downloaded CCS ${VER} installer..."
+# Install CCS from pre-downloaded and extracted files
+echo ">>> Using pre-downloaded and extracted CCS ${VER} installer..."
 if [ "${MAJOR_VER}" -ge 20 ]; then
     ln -sf /bin/true /usr/local/bin/udevadm
     ln -sf /bin/true /sbin/start_udev
@@ -71,11 +70,8 @@ if [ "${MAJOR_VER}" -ge 20 ]; then
     ln -sf /bin/true /sbin/rmmod
     mkdir -p /etc/udev/rules.d /run/udev /lib/modules
 
-    echo ">>> Extracting pre-downloaded installer..."
-    unzip -q "/opt/ccs-installer/CCS_${VER}_linux.zip" -d /ccs_install
-    chmod -R 755 "/ccs_install/CCS_${VER}_linux"
     echo ">>> Installing CCS ${VER} (this may take a while)..."
-    cd "/ccs_install/CCS_${VER}_linux"
+    cd "/opt/ccs-installer/CCS_${VER}_linux"
     chmod +x "ccs_setup_${VER}.run"
     "./ccs_setup_${VER}.run" --mode unattended --enable-components "${COMPONENTS}" --prefix /opt/ti 2>&1 | tee "${INSTALL_LOG}"
 else
@@ -91,19 +87,16 @@ else
     ln -sf /bin/true /usr/local/bin/udevadm
     ln -sf /bin/true /usr/local/bin/systemctl
 
-    echo ">>> Extracting pre-downloaded installer..."
-    tar -zxf "/opt/ccs-installer/CCS${VER}_linux-x64.tar.gz" -C /ccs_install
-    chmod -R 755 "/ccs_install/CCS${VER}_linux-x64"
     echo ">>> Installing CCS ${VER} (this may take a while)..."
     # v10+: new installer (.run, supports --enable-components with PF_* IDs)
     # v9-:  old BitRock installer; binary name varies (linux64_*.bin or *.run), use find to detect
     if [ "${MAJOR_VER}" -ge 10 ]; then
-        "/ccs_install/CCS${VER}_linux-x64/ccs_setup_${VER}.run" \
+        "/opt/ccs-installer/CCS${VER}_linux-x64/ccs_setup_${VER}.run" \
             --mode unattended --enable-components "${COMPONENTS}" --prefix /opt/ti \
             --install-BlackHawk false --install-Segger false 2>&1 | tee "${INSTALL_LOG}"
     else
         echo ">>> Note: --enable-components is not supported for CCS v9 and below. Installing all components."
-        INSTALLER_BIN=$(find "/ccs_install/CCS${VER}_linux-x64" -maxdepth 1 \( -name "*.bin" -o -name "*.run" \) | sort | head -1)
+        INSTALLER_BIN=$(find "/opt/ccs-installer/CCS${VER}_linux-x64" -maxdepth 1 \( -name "*.bin" -o -name "*.run" \) | sort | head -1)
         "${INSTALLER_BIN}" \
             --mode unattended --prefix /opt/ti \
             --install-BlackHawk false --install-Segger false 2>&1 | tee "${INSTALL_LOG}"
@@ -132,7 +125,7 @@ echo ">>> CCS ${VER} installation complete."
 # Cleanup
 echo ">>> Cleaning up..."
 cd /home
-rm -rf /ccs_install
+rm -rf /opt/ccs-installer
 
 echo ""
 echo "=== CCS ${VER} is ready. ==="

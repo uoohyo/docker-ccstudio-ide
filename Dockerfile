@@ -12,16 +12,17 @@ ARG MINOR_VER=5
 ARG PATCH_VER=0
 ARG BUILD_VER=00028
 
-# Install download tools
+# Install download and extraction tools
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
     aria2 \
+    unzip \
     ca-certificates && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# Download CCS installer
+# Download and extract CCS installer
 RUN echo ">>> Downloading CCS ${CCS_VERSION}..." && \
-    mkdir -p /ccs_download && \
+    mkdir -p /ccs_download /ccs_installer && \
     cd /ccs_download && \
     CCS_URL="https://dr-download.ti.com/software-development/ide-configuration-compiler-or-debugger/MD-J1VdearkvK/" && \
     if [ "${MAJOR_VER}" -ge 20 ]; then \
@@ -33,7 +34,12 @@ RUN echo ">>> Downloading CCS ${CCS_VERSION}..." && \
             --summary-interval=0 \
             -o "CCS_${CCS_VERSION}_linux.zip" \
             "${CCS_URL}${MAJOR_VER}.${MINOR_VER}.${PATCH_VER}/CCS_${CCS_VERSION}_linux.zip" && \
-        echo ">>> Download complete: $(du -h CCS_${CCS_VERSION}_linux.zip | cut -f1)"; \
+        echo ">>> Download complete: $(du -h CCS_${CCS_VERSION}_linux.zip | cut -f1)" && \
+        echo ">>> Extracting installer..." && \
+        unzip -q "CCS_${CCS_VERSION}_linux.zip" -d /ccs_installer && \
+        chmod -R 755 "/ccs_installer/CCS_${CCS_VERSION}_linux" && \
+        echo ">>> Extraction complete. Cleaning up archive..." && \
+        rm -f "CCS_${CCS_VERSION}_linux.zip"; \
     else \
         if [ "${MAJOR_VER}" -ge 12 ]; then \
             CCS_DL_PATH="${MAJOR_VER}.${MINOR_VER}.${PATCH_VER}"; \
@@ -48,7 +54,12 @@ RUN echo ">>> Downloading CCS ${CCS_VERSION}..." && \
             --summary-interval=0 \
             -o "CCS${CCS_VERSION}_linux-x64.tar.gz" \
             "${CCS_URL}${CCS_DL_PATH}/CCS${CCS_VERSION}_linux-x64.tar.gz" && \
-        echo ">>> Download complete: $(du -h CCS${CCS_VERSION}_linux-x64.tar.gz | cut -f1)"; \
+        echo ">>> Download complete: $(du -h CCS${CCS_VERSION}_linux-x64.tar.gz | cut -f1)" && \
+        echo ">>> Extracting installer..." && \
+        tar -zxf "CCS${CCS_VERSION}_linux-x64.tar.gz" -C /ccs_installer && \
+        chmod -R 755 "/ccs_installer/CCS${CCS_VERSION}_linux-x64" && \
+        echo ">>> Extraction complete. Cleaning up archive..." && \
+        rm -f "CCS${CCS_VERSION}_linux-x64.tar.gz"; \
     fi
 
 # ============================================
@@ -110,8 +121,8 @@ RUN echo ">>> Installing system dependencies..." && \
     apt-get clean && rm -rf /var/lib/apt/lists/* && \
     echo ">>> Done."
 
-# Copy pre-downloaded CCS installer from downloader stage
-COPY --from=downloader /ccs_download /opt/ccs-installer
+# Copy pre-downloaded and extracted CCS installer from downloader stage
+COPY --from=downloader /ccs_installer /opt/ccs-installer
 
 # Working Directory
 WORKDIR /home
