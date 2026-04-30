@@ -2,7 +2,7 @@ name: Build All CCS Versions
 
 on:
   push:
-    branches: [main]
+    branches: [main, develop]  # TESTING: Remove 'develop' before merging to main
   schedule:
     # Run every Sunday at 00:00 UTC
     - cron: '0 0 * * 0'
