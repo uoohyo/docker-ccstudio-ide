@@ -1,43 +1,27 @@
 #!/bin/bash
-# Parse CCS versions from TI download page
+# Parse CCS versions from versions.json
 # Returns JSON array of version objects
 
 set -euo pipefail
 
-# Fetch TI download page and extract version
-TI_URL="https://www.ti.com/tool/download/CCSTUDIO"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+VERSIONS_FILE="${SCRIPT_DIR}/../versions.json"
 
-echo "Fetching CCS versions from ${TI_URL}..." >&2
-
-# Extract version from download links
-# Pattern: CCS_MAJOR.MINOR.PATCH.BUILD_platform.ext
-VERSION=$(curl -s "${TI_URL}" | \
-    grep -o 'CCS_[0-9]\+\.[0-9]\+\.[0-9]\+\.[0-9]\+' | \
-    sed 's/CCS_//' | \
-    head -1)
-
-if [ -z "$VERSION" ]; then
-    echo "Error: Failed to parse CCS version" >&2
+# Check if versions.json exists
+if [ ! -f "$VERSIONS_FILE" ]; then
+    echo "Error: versions.json not found at ${VERSIONS_FILE}" >&2
     exit 1
 fi
 
-echo "Latest version: ${VERSION}" >&2
+echo "Loading supported CCS versions from versions.json..." >&2
 
-# Parse version components
-IFS='.' read -r MAJOR MINOR PATCH BUILD <<< "$VERSION"
+# Read and output versions.json
+VERSIONS=$(cat "$VERSIONS_FILE")
 
-# Output JSON array with version objects
-# For now, we'll build specific supported versions
-# In the future, this can be expanded to scrape multiple versions
-cat << EOF
-[
-  {
-    "version": "${VERSION}",
-    "major": "${MAJOR}",
-    "minor": "${MINOR}",
-    "patch": "${PATCH}",
-    "build": "${BUILD}",
-    "is_latest": true
-  }
-]
-EOF
+# Count versions
+COUNT=$(echo "$VERSIONS" | jq '. | length')
+echo "Found ${COUNT} supported versions:" >&2
+echo "$VERSIONS" | jq -r '.[] | "  - \(.version) (\(.description))"' >&2
+
+# Output JSON
+echo "$VERSIONS"
