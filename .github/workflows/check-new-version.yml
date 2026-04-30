@@ -13,34 +13,74 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Get latest version from TI
-        id: ti-version
-        run: |
-          VERSION=$(bash scripts/parse-versions.sh | jq -r '.[0].version')
-          echo "version=${VERSION}" >> $GITHUB_OUTPUT
-          echo "TI latest version: ${VERSION}"
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
 
-      - name: Check if version exists on Docker Hub
-        id: hub-check
+      - name: Get all versions from TI
+        id: ti-versions
+        env:
+          USE_SCRAPER: 'true'
         run: |
-          VERSION="${{ steps.ti-version.outputs.version }}"
+          echo "Fetching all versions from TI website..."
+          ALL_VERSIONS=$(bash .github/scripts/parse-versions.sh)
+          LATEST_VERSION=$(echo "$ALL_VERSIONS" | jq -r '.[0].version')
 
-          # Check if tag exists on Docker Hub
-          if docker manifest inspect uoohyo/ccstudio-ide:${VERSION} > /dev/null 2>&1; then
-            echo "exists=true" >> $GITHUB_OUTPUT
-            echo "Version ${VERSION} already exists on Docker Hub"
+          echo "versions=${ALL_VERSIONS}" >> $GITHUB_OUTPUT
+          echo "latest=${LATEST_VERSION}" >> $GITHUB_OUTPUT
+          echo "TI latest version: ${LATEST_VERSION}"
+          echo "Total TI versions: $(echo "$ALL_VERSIONS" | jq '. | length')"
+
+      - name: Get existing versions from Docker Hub
+        id: hub-versions
+        run: |
+          echo "Fetching existing tags from Docker Hub..."
+
+          # Get all tags from Docker Hub
+          TAGS=$(curl -s "https://hub.docker.com/v2/repositories/uoohyo/ccstudio-ide/tags?page_size=100" | jq -r '.results[].name' | grep -E '^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$' || echo "")
+
+          if [ -z "$TAGS" ]; then
+            echo "No existing tags found on Docker Hub"
+            echo "tags=[]" >> $GITHUB_OUTPUT
           else
-            echo "exists=false" >> $GITHUB_OUTPUT
-            echo "Version ${VERSION} is NEW - will trigger build"
+            # Convert to JSON array
+            TAGS_JSON=$(echo "$TAGS" | jq -R . | jq -s .)
+            echo "tags=${TAGS_JSON}" >> $GITHUB_OUTPUT
+            echo "Existing Docker Hub versions: $(echo "$TAGS_JSON" | jq '. | length')"
           fi
 
-      - name: Trigger build for new version
-        if: steps.hub-check.outputs.exists == 'false'
+      - name: Find missing versions
+        id: missing-versions
+        run: |
+          TI_VERSIONS='${{ steps.ti-versions.outputs.versions }}'
+          HUB_TAGS='${{ steps.hub-versions.outputs.tags }}'
+
+          # Find versions that exist on TI but not on Docker Hub
+          MISSING=$(echo "$TI_VERSIONS" | jq --argjson hub "$HUB_TAGS" '
+            map(select(.version as $v | $hub | index($v) | not))
+          ')
+
+          MISSING_COUNT=$(echo "$MISSING" | jq '. | length')
+          echo "missing=${MISSING}" >> $GITHUB_OUTPUT
+          echo "count=${MISSING_COUNT}" >> $GITHUB_OUTPUT
+
+          echo "Missing versions: ${MISSING_COUNT}"
+          if [ "$MISSING_COUNT" -gt 0 ]; then
+            echo "$MISSING" | jq -r '.[].version'
+          fi
+
+      - name: Trigger build for missing versions
+        if: steps.missing-versions.outputs.count > 0
         uses: actions/github-script@v7
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            const version = '${{ steps.ti-version.outputs.version }}';
+            const missingVersions = ${{ steps.missing-versions.outputs.missing }};
+            const count = missingVersions.length;
+
+            console.log(`Triggering build for ${count} missing version(s):`);
+            missingVersions.forEach(v => console.log(`  - ${v.version}`));
 
             await github.rest.actions.createWorkflowDispatch({
               owner: context.repo.owner,
@@ -48,36 +88,34 @@ jobs:
               workflow_id: 'build-all-versions.yml',
               ref: 'main',
               inputs: {
-                versions: JSON.stringify([{
-                  version: version,
-                  major: version.split('.')[0],
-                  minor: version.split('.')[1],
-                  patch: version.split('.')[2],
-                  build: version.split('.')[3],
-                  is_latest: true
-                }])
+                versions: JSON.stringify(missingVersions),
+                use_scraper: 'false'  // Already have versions list
               }
             });
 
-            console.log(`Triggered build for new version: ${version}`);
+            console.log(`Build triggered successfully`);
 
-      - name: Create issue for new version
-        if: steps.hub-check.outputs.exists == 'false'
+      - name: Create issue for new versions
+        if: steps.missing-versions.outputs.count > 0
         uses: actions/github-script@v7
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            const version = '${{ steps.ti-version.outputs.version }}';
+            const missingVersions = ${{ steps.missing-versions.outputs.missing }};
+            const latestVersion = '${{ steps.ti-versions.outputs.latest }}';
+            const count = missingVersions.length;
+
+            const versionList = missingVersions.map(v => `- ${v.version}`).join('\n');
 
             await github.rest.issues.create({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              title: `New CCS version detected: ${version}`,
-              body: `A new CCS version **${version}** has been detected and is being built automatically.\n\n- TI Download Page: https://www.ti.com/tool/download/CCSTUDIO\n- Build workflow: [View workflow run](https://github.com/${context.repo.owner}/${context.repo.repo}/actions/workflows/build-all-versions.yml)\n\nThis issue was created automatically by the version check workflow.`,
+              title: `New CCS versions detected: ${count} version(s)`,
+              body: `**${count} new CCS version(s)** have been detected and are being built automatically.\n\n## Missing versions:\n${versionList}\n\n## Latest version:\n**${latestVersion}**\n\n## Links:\n- [TI Download Page](https://www.ti.com/tool/download/CCSTUDIO)\n- [Build Workflow](https://github.com/${context.repo.owner}/${context.repo.repo}/actions/workflows/build-all-versions.yml)\n\nThis issue was created automatically by the weekly version check workflow.`,
               labels: ['automation', 'new-version']
             });
 
-      - name: No new version
-        if: steps.hub-check.outputs.exists == 'true'
+      - name: No new versions
+        if: steps.missing-versions.outputs.count == 0
         run: |
-          echo "No new version detected. Current latest: ${{ steps.ti-version.outputs.version }}"
+          echo "No new versions detected. Current latest: ${{ steps.ti-versions.outputs.latest }}"

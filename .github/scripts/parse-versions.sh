@@ -5,7 +5,7 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-VERSIONS_FILE="${SCRIPT_DIR}/../versions.json"
+VERSIONS_FILE="${SCRIPT_DIR}/../../versions.json"
 USE_SCRAPER="${USE_SCRAPER:-false}"
 
 # Function to load from versions.json (fallback)

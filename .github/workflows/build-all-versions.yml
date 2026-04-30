@@ -2,7 +2,7 @@ name: Build All CCS Versions
 
 on:
   push:
-    branches: [main, develop]  # TESTING: Remove 'develop' before merging to main
+    branches: [main]
   schedule:
     # Run every Sunday at 00:00 UTC
     - cron: '0 0 * * 0'
@@ -16,7 +16,7 @@ on:
         description: 'Use web scraper to detect versions (requires Playwright)'
         required: false
         type: boolean
-        default: false
+        default: true
 
 jobs:
   detect-versions:
@@ -37,14 +37,14 @@ jobs:
       - name: Parse CCS versions
         id: parse
         env:
-          USE_SCRAPER: ${{ github.event.inputs.use_scraper || 'false' }}
+          USE_SCRAPER: ${{ github.event.inputs.use_scraper || 'true' }}
         run: |
           # Use manual input if provided
           if [ -n "${{ github.event.inputs.versions }}" ]; then
             VERSIONS='${{ github.event.inputs.versions }}'
           else
             # Parse versions (from web or versions.json)
-            VERSIONS=$(bash scripts/parse-versions.sh)
+            VERSIONS=$(bash .github/scripts/parse-versions.sh)
           fi
 
           echo "versions=${VERSIONS}" >> $GITHUB_OUTPUT
@@ -80,7 +80,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: .
-          push: false  # TESTING: Set to true before production
+          push: true
           build-args: |
             CCS_VERSION=${{ matrix.version_info.version }}
             MAJOR_VER=${{ matrix.version_info.major }}
@@ -92,12 +92,10 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
           platforms: linux/amd64
-          load: true  # Load image locally for testing
 
   tag-latest:
     needs: [detect-versions, build-and-push]
     runs-on: ubuntu-latest
-    if: false  # TESTING: Disable for testing, enable before production
     steps:
       - name: Log in to Docker Hub
         uses: docker/login-action@v3
