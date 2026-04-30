@@ -50,10 +50,10 @@ jobs:
           echo "Generating version table..."
 
           # Table header
-          cat > /tmp/table.md << 'EOF'
-| 버전 | 빌드 상태 | TI 다운로드 |
-|------|-----------|-------------|
-EOF
+          {
+            echo "| Version | Build Status | TI Download |"
+            echo "|---------|--------------|-------------|"
+          } > /tmp/table.md
 
           # Generate rows
           while IFS= read -r version; do
@@ -62,20 +62,13 @@ EOF
             fi
 
             # Build status badge
-            # GitHub Actions 워크플로우 배지 (특정 버전 빌드는 추적 어려우므로 전체 워크플로우 상태 사용)
             BUILD_BADGE="![Build](https://github.com/${{ github.repository }}/workflows/Build%20All%20CCS%20Versions/badge.svg)"
 
             # TI download link - handle both 3-part and 4-part versions
-            if [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-              # 4-part version (e.g., 11.2.0.00007)
-              TI_LINK="https://www.ti.com/tool/download/CCSTUDIO/${version}"
-            else
-              # 3-part version (e.g., 20.5.0 or 12.8.1)
-              TI_LINK="https://www.ti.com/tool/download/CCSTUDIO/${version}"
-            fi
+            TI_LINK="https://www.ti.com/tool/download/CCSTUDIO/${version}"
 
             # Add table row
-            echo "| \`${version}\` | ${BUILD_BADGE} | [다운로드](${TI_LINK}) |" >> /tmp/table.md
+            echo "| \`${version}\` | ${BUILD_BADGE} | [Download](${TI_LINK}) |" >> /tmp/table.md
 
           done < /tmp/versions.txt
 

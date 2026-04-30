@@ -1,21 +1,21 @@
-# CCS Studio IDE 지원 버전
+# Supported CCS Versions
 
-이 문서는 자동으로 업데이트됩니다.
+This document is automatically updated.
 
-**최종 업데이트:** Initial version - will be auto-updated
+**Last Update:** Initial version - will be auto-updated after first build
 
-## 📦 사용 가능한 버전
+## 📦 Available Versions
 
 <!-- VERSION_TABLE_START -->
 
-*이 테이블은 첫 빌드 완료 후 자동으로 채워집니다.*
+*This table will be automatically populated after the first build completes.*
 
 <!-- VERSION_TABLE_END -->
 
-## 💡 사용 방법
+## 💡 Usage
 
 ```bash
-# 특정 버전 실행
+# Run specific version
 docker run -it --rm \
   -e DISPLAY=$DISPLAY \
   -v /tmp/.X11-unix:/tmp/.X11-unix \
@@ -23,8 +23,10 @@ docker run -it --rm \
   uoohyo/ccstudio-ide:{VERSION}
 ```
 
-## 🔗 관련 링크
+Replace `{VERSION}` with any version from the table above.
 
-- [메인 README](../README.md)
-- [Docker Hub](https://hub.docker.com/r/uoohyo/ccstudio-ide)
-- [TI CCS 공식 사이트](https://www.ti.com/tool/CCSTUDIO)
+## 🔗 Related Links
+
+- [Main README](../README.md)
+- [Docker Hub Repository](https://hub.docker.com/r/uoohyo/ccstudio-ide)
+- [TI CCS Official Site](https://www.ti.com/tool/CCSTUDIO)
