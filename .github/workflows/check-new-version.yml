@@ -6,9 +6,15 @@ on:
     - cron: '0 0 * * 0'
   workflow_dispatch:
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   check-new-version:
     runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      actions: write
     steps:
       - name: Ensure required labels exist
         uses: actions/github-script@v7
@@ -45,12 +51,10 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '22'
 
       - name: Get all versions from TI
         id: ti-versions
-        env:
-          USE_SCRAPER: 'true'
         run: |
           echo "Fetching all versions from TI website..."
           ALL_VERSIONS=$(bash .github/scripts/parse-versions.sh)
@@ -92,7 +96,8 @@ jobs:
           ')
 
           MISSING_COUNT=$(echo "$MISSING" | jq '. | length')
-          echo "missing=${MISSING}" >> $GITHUB_OUTPUT
+          DELIMITER=$(openssl rand -hex 8)
+          { echo "missing<<${DELIMITER}"; echo "${MISSING}"; echo "${DELIMITER}"; } >> $GITHUB_OUTPUT
           echo "count=${MISSING_COUNT}" >> $GITHUB_OUTPUT
 
           echo "Missing versions: ${MISSING_COUNT}"
