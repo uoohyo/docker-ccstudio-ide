@@ -111,3 +111,57 @@ jobs:
           docker pull uoohyo/ccstudio-ide:${LATEST_VERSION}
           docker tag uoohyo/ccstudio-ide:${LATEST_VERSION} uoohyo/ccstudio-ide:latest
           docker push uoohyo/ccstudio-ide:latest
+
+  handle-failure:
+    needs: [detect-versions, build-and-push]
+    runs-on: ubuntu-latest
+    if: failure()
+    steps:
+      - name: Mark building issue as failed
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            // Find open issues with "building" label
+            const issues = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: 'building'
+            });
+
+            if (issues.data.length === 0) {
+              console.log('No building issues found');
+              return;
+            }
+
+            // Process each building issue
+            for (const issue of issues.data) {
+              console.log(`Marking issue #${issue.number} as failed`);
+
+              // Add failure comment
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issue.number,
+                body: `❌ **Build failed**\n\nSome versions failed to build. Please check the [workflow run](https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}) for details.\n\nThis issue will remain open for investigation.`
+              });
+
+              // Add "failed" label
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issue.number,
+                labels: ['failed']
+              });
+
+              // Remove "building" label
+              await github.rest.issues.removeLabel({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issue.number,
+                name: 'building'
+              });
+
+              console.log(`Issue #${issue.number} marked as failed`);
+            }

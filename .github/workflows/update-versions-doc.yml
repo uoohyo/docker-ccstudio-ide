@@ -172,3 +172,61 @@ jobs:
             git push
             echo "Documentation updated successfully"
           fi
+
+      - name: Close building issue
+        if: success()
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            // Find open issues with "building" label
+            const issues = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: 'building'
+            });
+
+            if (issues.data.length === 0) {
+              console.log('No building issues found');
+              return;
+            }
+
+            // Process each building issue
+            for (const issue of issues.data) {
+              console.log(`Processing issue #${issue.number}`);
+
+              // Add success comment
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issue.number,
+                body: `✅ **Build completed successfully!**\n\nAll versions have been built and pushed to Docker Hub.\n\n- 📦 [Docker Hub Repository](https://hub.docker.com/r/uoohyo/ccstudio-ide/tags)\n- 📋 [Version Documentation](https://github.com/${context.repo.owner}/${context.repo.repo}/blob/main/docs/versions.md)\n- 📝 README has been updated with the latest versions\n\nThis issue is now closed automatically.`
+              });
+
+              // Add "completed" label
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issue.number,
+                labels: ['completed']
+              });
+
+              // Remove "building" label
+              await github.rest.issues.removeLabel({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issue.number,
+                name: 'building'
+              });
+
+              // Close issue
+              await github.rest.issues.update({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issue.number,
+                state: 'closed'
+              });
+
+              console.log(`Issue #${issue.number} closed successfully`);
+            }

@@ -97,6 +97,7 @@ jobs:
 
       - name: Create issue for new versions
         if: steps.missing-versions.outputs.count > 0
+        id: create-issue
         uses: actions/github-script@v7
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -107,13 +108,16 @@ jobs:
 
             const versionList = missingVersions.map(v => `- ${v.version}`).join('\n');
 
-            await github.rest.issues.create({
+            const issue = await github.rest.issues.create({
               owner: context.repo.owner,
               repo: context.repo.repo,
               title: `New CCS versions detected: ${count} version(s)`,
-              body: `**${count} new CCS version(s)** have been detected and are being built automatically.\n\n## Missing versions:\n${versionList}\n\n## Latest version:\n**${latestVersion}**\n\n## Links:\n- [TI Download Page](https://www.ti.com/tool/download/CCSTUDIO)\n- [Build Workflow](https://github.com/${context.repo.owner}/${context.repo.repo}/actions/workflows/build-all-versions.yml)\n\nThis issue was created automatically by the weekly version check workflow.`,
-              labels: ['automation', 'new-version']
+              body: `**${count} new CCS version(s)** have been detected and are being built automatically.\n\n## Missing versions:\n${versionList}\n\n## Latest version:\n**${latestVersion}**\n\n## Status:\n🔨 Building...\n\n## Links:\n- [TI Download Page](https://www.ti.com/tool/download/CCSTUDIO)\n- [Build Workflow](https://github.com/${context.repo.owner}/${context.repo.repo}/actions/workflows/build-all-versions.yml)\n\nThis issue was created automatically by the weekly version check workflow.`,
+              labels: ['automation', 'new-version', 'building']
             });
+
+            console.log(`Issue created: #${issue.data.number}`);
+            return issue.data.number;
 
       - name: No new versions
         if: steps.missing-versions.outputs.count == 0
