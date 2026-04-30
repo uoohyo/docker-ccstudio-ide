@@ -43,3 +43,4 @@ build-logs/
 # 에디터 관련
 .idea/
 *.iml
+.claude/
