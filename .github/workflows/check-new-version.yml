@@ -10,6 +10,35 @@ jobs:
   check-new-version:
     runs-on: ubuntu-latest
     steps:
+      - name: Ensure required labels exist
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const labels = [
+              { name: 'automation',   color: '0075ca', description: 'Automated process' },
+              { name: 'new-version',  color: 'e4e669', description: 'New CCS version detected' },
+              { name: 'building',     color: 'f9d0c4', description: 'Build in progress' },
+              { name: 'failed',       color: 'd73a4a', description: 'Build failed' },
+              { name: 'completed',    color: '0e8a16', description: 'Build completed successfully' },
+            ];
+            for (const label of labels) {
+              try {
+                await github.rest.issues.createLabel({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  ...label
+                });
+                console.log(`Created label: ${label.name}`);
+              } catch (e) {
+                if (e.status === 422) {
+                  console.log(`Label already exists: ${label.name}`);
+                } else {
+                  throw e;
+                }
+              }
+            }
+
       - name: Checkout repository
         uses: actions/checkout@v4
 

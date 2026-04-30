@@ -77,11 +77,10 @@ jobs:
 
             # Add to README table (HTML format, top 6 only)
             if [ $COUNT -lt 6 ]; then
-              # Test workflow badge
-              TEST_BADGE="https://img.shields.io/github/actions/workflow/status/${{ github.repository }}/test-v${MAJOR}.yml?branch=main&label=&style=flat-square"
-              TEST_LINK="https://github.com/${{ github.repository }}/actions/workflows/test-v${MAJOR}.yml"
+              BUILD_BADGE="https://img.shields.io/github/actions/workflow/status/${{ github.repository }}/build-all-versions.yml?branch=main&label=v${MAJOR}&style=flat-square"
+              BUILD_LINK="https://github.com/${{ github.repository }}/actions/workflows/build-all-versions.yml"
 
-              echo "        <tr><td>v${version}</td><td><a href=\"${TEST_LINK}\"><img src=\"${TEST_BADGE}\" alt=\"v${MAJOR}\" /></a></td></tr>" >> /tmp/table-readme.md
+              echo "        <tr><td>v${version}</td><td><a href=\"${BUILD_LINK}\"><img src=\"${BUILD_BADGE}\" alt=\"v${MAJOR}\" /></a></td></tr>" >> /tmp/table-readme.md
               COUNT=$((COUNT + 1))
             fi
 

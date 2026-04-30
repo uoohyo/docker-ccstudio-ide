@@ -3,9 +3,6 @@ name: Build All CCS Versions
 on:
   push:
     branches: [main]
-  schedule:
-    # Run every Sunday at 00:00 UTC
-    - cron: '0 0 * * 0'
   workflow_dispatch:
     inputs:
       versions:
@@ -37,7 +34,7 @@ jobs:
       - name: Parse CCS versions
         id: parse
         env:
-          USE_SCRAPER: ${{ github.event.inputs.use_scraper || 'true' }}
+          USE_SCRAPER: ${{ github.event.inputs.use_scraper || 'false' }}
         run: |
           # Use manual input if provided
           if [ -n "${{ github.event.inputs.versions }}" ]; then
@@ -105,11 +102,24 @@ jobs:
 
       - name: Tag and push latest
         run: |
-          LATEST_VERSION="${{ needs.detect-versions.outputs.latest_version }}"
-          echo "Tagging ${LATEST_VERSION} as latest"
+          BUILT_VERSION="${{ needs.detect-versions.outputs.latest_version }}"
 
-          docker pull uoohyo/ccstudio-ide:${LATEST_VERSION}
-          docker tag uoohyo/ccstudio-ide:${LATEST_VERSION} uoohyo/ccstudio-ide:latest
+          # Fetch all existing tags from Docker Hub to find actual latest
+          EXISTING_TAGS=$(curl -s "https://hub.docker.com/v2/repositories/uoohyo/ccstudio-ide/tags?page_size=100" \
+            | jq -r '.results[].name' \
+            | grep -E '^[0-9]+\.[0-9]+\.[0-9]+(\.[0-9]+)?$' || echo "")
+
+          # Combine existing tags with the version just built
+          ALL_TAGS=$(printf "%s\n%s" "$EXISTING_TAGS" "$BUILT_VERSION" | grep -v '^$')
+
+          # Find actual latest by version sort
+          ACTUAL_LATEST=$(echo "$ALL_TAGS" | sort -V | tail -1)
+
+          echo "Built version: ${BUILT_VERSION}"
+          echo "Actual latest across all tags: ${ACTUAL_LATEST}"
+
+          docker pull uoohyo/ccstudio-ide:${ACTUAL_LATEST}
+          docker tag uoohyo/ccstudio-ide:${ACTUAL_LATEST} uoohyo/ccstudio-ide:latest
           docker push uoohyo/ccstudio-ide:latest
 
   handle-failure:
