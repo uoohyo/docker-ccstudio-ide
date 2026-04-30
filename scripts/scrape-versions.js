@@ -41,109 +41,66 @@ async function scrapeVersions() {
   });
   await page.waitForTimeout(2000);
 
-  console.error('Looking for version selector...');
+  console.error('Looking for ti-filter-list element...');
 
-  // Try multiple strategies to find and interact with version selector
   let versionList = [];
 
-  // Strategy 1: Look for and click version filter/dropdown
+  // Strategy 1: Extract from ti-filter-list items attribute (most reliable)
   try {
-    console.error('Strategy 1: Clicking version filter...');
+    console.error('Strategy 1: Parsing ti-filter-list items attribute...');
 
-    // Try to click on "Select a version" text or nearby element
-    const versionDropdown = page.locator('text="Select a version"').first();
-    if (await versionDropdown.isVisible({ timeout: 5000 })) {
-      console.error('Found "Select a version", clicking...');
-      await versionDropdown.click({ force: true });
-      await page.waitForTimeout(2000);
-    }
+    const filterList = page.locator('ti-filter-list').first();
+    if (await filterList.count() > 0) {
+      const itemsAttr = await filterList.getAttribute('items');
+      if (itemsAttr) {
+        console.error('Found items attribute, parsing JSON...');
+        const items = JSON.parse(itemsAttr);
 
-    // Also try clicking the filter input
-    const filterInput = page.locator('input[placeholder*="version" i], input[placeholder*="filter" i]').first();
-    if (await filterInput.count() > 0) {
-      console.error('Found filter input, scrolling and clicking...');
+        // Parse version groups
+        for (const group of items) {
+          if (group.children && Array.isArray(group.children)) {
+            for (const item of group.children) {
+              // Extract version from value (e.g., "CCSTUDIO/20.5.0" or "CCSTUDIO/11.2.0.00007")
+              const valueMatch = item.value.match(/CCSTUDIO\/(\d+\.\d+\.\d+(?:\.\d+)?)/);
+              if (valueMatch) {
+                const versionStr = valueMatch[1];
+                const parts = versionStr.split('.');
 
-      // Scroll into view and click with force
-      await filterInput.scrollIntoViewIfNeeded();
-      await page.waitForTimeout(500);
-      await filterInput.click({ force: true });
-      await page.waitForTimeout(2000);
+                // Ensure 4-part version (add .0 if needed for v12 and below)
+                const major = parts[0];
+                const minor = parts[1] || '0';
+                const patch = parts[2] || '0';
+                const build = parts[3] || '0';
 
-      // Try typing to trigger dropdown
-      await filterInput.fill('');
-      await page.waitForTimeout(1000);
+                versionList.push({
+                  version: `${major}.${minor}.${patch}.${build}`,
+                  major,
+                  minor,
+                  patch,
+                  build
+                });
+              }
+            }
+          }
+        }
+
+        console.error(`Extracted ${versionList.length} versions from ti-filter-list`);
+      }
     }
   } catch (e) {
     console.error(`Strategy 1 error: ${e.message}`);
   }
 
-  // Strategy 2: Look for version list items
-  try {
-    console.error('Strategy 2: Extracting version list items...');
+  // Strategy 2: Fallback - extract from page content
+  if (versionList.length === 0) {
+    console.error('Strategy 2 (fallback): Extracting from page content...');
+    const pageContent = await page.content();
+    const versionMatches = pageContent.matchAll(/(\d+)\.(\d+)\.(\d+)\.(\d+)/g);
 
-    // Common selectors for version lists
-    const selectors = [
-      '[class*="version"] a',
-      '[class*="version"] button',
-      'li[class*="version"]',
-      '[data-version]',
-      'a[href*="20."], a[href*="12."], a[href*="11."]'
-    ];
-
-    for (const selector of selectors) {
-      const elements = await page.locator(selector).all();
-      if (elements.length > 0) {
-        console.error(`Found ${elements.length} elements with selector: ${selector}`);
-
-        for (const el of elements) {
-          const text = await el.textContent();
-          const match = text.match(/(\d+)\.(\d+)\.(\d+)\.(\d+)/);
-          if (match) {
-            versionList.push({
-              version: `${match[1]}.${match[2]}.${match[3]}.${match[4]}`,
-              major: match[1],
-              minor: match[2],
-              patch: match[3],
-              build: match[4]
-            });
-          }
-        }
-
-        if (versionList.length > 0) break;
-      }
-    }
-  } catch (e) {
-    console.error('Version list extraction failed:', e.message);
-  }
-
-  // Strategy 3: Extract from page content directly
-  console.error('Strategy 3: Extracting from page text content...');
-  const pageContent = await page.content();
-  const versionMatches = pageContent.matchAll(/(\d+)\.(\d+)\.(\d+)\.(\d+)/g);
-
-  for (const match of versionMatches) {
-    const major = parseInt(match[1]);
-    // Filter out non-version numbers (e.g., dates, random numbers)
-    if (major >= 7 && major <= 30) {
-      versionList.push({
-        version: `${match[1]}.${match[2]}.${match[3]}.${match[4]}`,
-        major: match[1],
-        minor: match[2],
-        patch: match[3],
-        build: match[4]
-      });
-    }
-  }
-
-  // Strategy 4: Check download links
-  console.error('Strategy 4: Checking download links...');
-  const links = await page.locator('a[href*="CCS"]').all();
-
-  for (const link of links) {
-    const href = await link.getAttribute('href');
-    if (href) {
-      const match = href.match(/CCS_?(\d+)\.(\d+)\.(\d+)\.(\d+)/);
-      if (match) {
+    for (const match of versionMatches) {
+      const major = parseInt(match[1]);
+      // Filter out non-version numbers (e.g., dates, random numbers)
+      if (major >= 7 && major <= 30) {
         versionList.push({
           version: `${match[1]}.${match[2]}.${match[3]}.${match[4]}`,
           major: match[1],

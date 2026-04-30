@@ -30,8 +30,15 @@ process.stdin.on('end', () => {
   // Create a map of all versions (scraped + manual)
   const versionMap = new Map();
 
-  // Add manual versions first (they have descriptions)
+  // Create a helper to generate base version key (without build number)
+  const getBaseKey = (v) => `${v.major}.${v.minor}.${v.patch}`;
+
+  // Map to track base versions (major.minor.patch)
+  const baseVersionMap = new Map();
+
+  // Add manual versions first (they have accurate build numbers)
   for (const v of manualVersions) {
+    const baseKey = getBaseKey(v);
     versionMap.set(v.version, {
       version: v.version,
       major: v.major,
@@ -41,10 +48,21 @@ process.stdin.on('end', () => {
       description: v.description,
       source: 'manual'
     });
+    baseVersionMap.set(baseKey, v.version);
   }
 
-  // Add scraped versions (newer versions might not be in manual list)
+  // Add scraped versions
   for (const v of scrapedVersions) {
+    const baseKey = getBaseKey(v);
+
+    // Skip scraped versions with build="0" if a manual version exists for same base
+    // (TI website shows simplified versions for v20/v12, but manual has accurate build numbers)
+    if (v.build === '0' && baseVersionMap.has(baseKey)) {
+      console.error(`Skipping simplified ${v.version} - using ${baseVersionMap.get(baseKey)} instead`);
+      continue;
+    }
+
+    // Add if not duplicate
     if (!versionMap.has(v.version)) {
       versionMap.set(v.version, {
         version: v.version,
@@ -55,6 +73,11 @@ process.stdin.on('end', () => {
         description: `Auto-detected from web`,
         source: 'scraped'
       });
+
+      // Track base version only if build number is present
+      if (!baseVersionMap.has(baseKey) || v.build !== '0') {
+        baseVersionMap.set(baseKey, v.version);
+      }
     }
   }
 
