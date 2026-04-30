@@ -79,7 +79,7 @@ jobs:
           echo "Updating docs/versions.md..."
 
           # Copy template
-          cp docs/versions.template.md docs/versions.md
+          cp docs/template/versions.template.md docs/versions.md
 
           # Read generated table
           TABLE=$(cat /tmp/table.md)
