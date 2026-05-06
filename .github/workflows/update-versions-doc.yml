@@ -116,10 +116,9 @@ jobs:
             | limit(6; .[])
             | .version
           ' | while read -r version; do
-            MAJOR=$(echo "$version" | cut -d'.' -f1)
-            BUILD_BADGE="https://img.shields.io/github/actions/workflow/status/${{ github.repository }}/build-all-versions.yml?branch=main&label=v${MAJOR}&style=flat-square"
+            BUILD_BADGE="https://img.shields.io/github/actions/workflow/status/${{ github.repository }}/build-all-versions.yml?branch=main&label=&style=flat-square"
             BUILD_LINK="https://github.com/${{ github.repository }}/actions/workflows/build-all-versions.yml"
-            echo "        <tr><td>v${version}</td><td><a href=\"${BUILD_LINK}\"><img src=\"${BUILD_BADGE}\" alt=\"v${MAJOR}\" /></a></td></tr>" >> /tmp/table-readme.md
+            echo "        <tr><td>v${version}</td><td><a href=\"${BUILD_LINK}\"><img src=\"${BUILD_BADGE}\" alt=\"build status\" /></a></td></tr>" >> /tmp/table-readme.md
           done
 
           echo "Full table: $(wc -l < /tmp/table-full.md) rows"
