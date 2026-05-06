@@ -79,8 +79,8 @@ jobs:
 
           # Full table for docs/versions.md — all versions, newest first
           {
-            echo "| Version | Status | TI Download |"
-            echo "|---------|--------|-------------|"
+            echo "| Version | Status | TI Download | Docker Pull |"
+            echo "|---------|--------|-------------|-------------|"
 
             echo "$VERSIONS" | jq -r '
               [.[]]
@@ -95,13 +95,16 @@ jobs:
 
               if echo "$DOCKER_TAGS" | jq -e --arg v "$version" '. | index($v) != null' > /dev/null 2>&1; then
                 STATUS="✅ Available"
+                DOCKER_PULL="\`docker pull uoohyo/ccstudio-ide:${version}\`"
               elif [ "$public_dl" = "true" ]; then
                 STATUS="🔨 Not Built Yet"
+                DOCKER_PULL="-"
               else
                 STATUS="⚠️ Not Supported"
+                DOCKER_PULL="-"
               fi
 
-              echo "| \`${version}\` | ${STATUS} | [Download](${TI_LINK}) |"
+              echo "| \`${version}\` | ${STATUS} | [Download](${TI_LINK}) | ${DOCKER_PULL} |"
             done
           } > /tmp/table-full.md
 
