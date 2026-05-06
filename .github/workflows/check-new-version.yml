@@ -71,17 +71,26 @@ jobs:
         run: |
           echo "Fetching existing tags from Docker Hub..."
 
-          # Get all tags from Docker Hub
-          TAGS=$(curl -s "https://hub.docker.com/v2/repositories/uoohyo/ccstudio-ide/tags?page_size=100" | jq -r '.results[].name' | grep -E '^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$' || echo "")
+          # Get all tags from Docker Hub (handle API errors gracefully)
+          RESPONSE=$(curl -s "https://hub.docker.com/v2/repositories/uoohyo/ccstudio-ide/tags?page_size=100")
 
-          if [ -z "$TAGS" ]; then
-            echo "No existing tags found on Docker Hub"
+          # Check if repository exists (API returns error object if not found)
+          if echo "$RESPONSE" | jq -e '.message' > /dev/null 2>&1; then
+            echo "Repository not found or API error: $(echo "$RESPONSE" | jq -r '.message')"
             echo "tags=[]" >> $GITHUB_OUTPUT
           else
-            # Convert to JSON array
-            TAGS_JSON=$(echo "$TAGS" | jq -R . | jq -s .)
-            echo "tags=${TAGS_JSON}" >> $GITHUB_OUTPUT
-            echo "Existing Docker Hub versions: $(echo "$TAGS_JSON" | jq '. | length')"
+            # Extract version tags
+            TAGS=$(echo "$RESPONSE" | jq -r '.results[].name' 2>/dev/null | grep -E '^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$' || echo "")
+
+            if [ -z "$TAGS" ]; then
+              echo "No existing version tags found on Docker Hub"
+              echo "tags=[]" >> $GITHUB_OUTPUT
+            else
+              # Convert to JSON array
+              TAGS_JSON=$(echo "$TAGS" | jq -R . | jq -s .)
+              echo "tags=${TAGS_JSON}" >> $GITHUB_OUTPUT
+              echo "Existing Docker Hub versions: $(echo "$TAGS_JSON" | jq '. | length')"
+            fi
           fi
 
       - name: Find missing versions
