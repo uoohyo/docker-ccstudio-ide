@@ -91,7 +91,13 @@ jobs:
               MAJOR=$(echo "$version" | cut -d'.' -f1)
               MINOR=$(echo "$version" | cut -d'.' -f2)
               PATCH=$(echo "$version" | cut -d'.' -f3)
-              TI_LINK="https://www.ti.com/tool/download/CCSTUDIO/${MAJOR}.${MINOR}.${PATCH}"
+
+              # v12+ uses 3-part version, v11 and below uses 4-part version
+              if [ "$MAJOR" -ge 12 ]; then
+                TI_LINK="https://www.ti.com/tool/download/CCSTUDIO/${MAJOR}.${MINOR}.${PATCH}"
+              else
+                TI_LINK="https://www.ti.com/tool/download/CCSTUDIO/${version}"
+              fi
 
               if echo "$DOCKER_TAGS" | jq -e --arg v "$version" '. | index($v) != null' > /dev/null 2>&1; then
                 STATUS="✅ Available"
