@@ -28,10 +28,11 @@ RUN echo ">>> Downloading CCS ${CCS_VERSION}..." && \
     if [ "${MAJOR_VER}" -ge 20 ]; then \
         aria2c -x 16 -s 16 \
             --file-allocation=none \
-            --timeout=300 \
-            --max-tries=3 \
-            --console-log-level=error \
-            --summary-interval=0 \
+            --timeout=600 \
+            --max-tries=5 \
+            --retry-wait=3 \
+            --console-log-level=notice \
+            --summary-interval=10 \
             -o "CCS_${CCS_VERSION}_linux.zip" \
             "${CCS_URL}${MAJOR_VER}.${MINOR_VER}.${PATCH_VER}/CCS_${CCS_VERSION}_linux.zip" && \
         echo ">>> Download complete: $(du -h CCS_${CCS_VERSION}_linux.zip | cut -f1)" && \
@@ -46,14 +47,17 @@ RUN echo ">>> Downloading CCS ${CCS_VERSION}..." && \
         else \
             CCS_DL_PATH="${CCS_VERSION}"; \
         fi && \
+        DOWNLOAD_URL="${CCS_URL}${CCS_DL_PATH}/CCS${CCS_VERSION}_linux-x64.tar.gz" && \
+        echo ">>> Download URL: ${DOWNLOAD_URL}" && \
         aria2c -x 16 -s 16 \
             --file-allocation=none \
-            --timeout=300 \
-            --max-tries=3 \
-            --console-log-level=error \
-            --summary-interval=0 \
+            --timeout=600 \
+            --max-tries=5 \
+            --retry-wait=3 \
+            --console-log-level=notice \
+            --summary-interval=10 \
             -o "CCS${CCS_VERSION}_linux-x64.tar.gz" \
-            "${CCS_URL}${CCS_DL_PATH}/CCS${CCS_VERSION}_linux-x64.tar.gz" && \
+            "${DOWNLOAD_URL}" && \
         echo ">>> Download complete: $(du -h CCS${CCS_VERSION}_linux-x64.tar.gz | cut -f1)" && \
         echo ">>> Extracting installer..." && \
         tar -zxf "CCS${CCS_VERSION}_linux-x64.tar.gz" -C /ccs_installer && \

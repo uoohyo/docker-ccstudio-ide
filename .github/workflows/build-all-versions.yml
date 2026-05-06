@@ -61,6 +61,7 @@ jobs:
     needs: detect-versions
     runs-on: ubuntu-latest
     strategy:
+      max-parallel: 1
       matrix:
         version_info: ${{ fromJson(needs.detect-versions.outputs.build_versions) }}
       fail-fast: false
