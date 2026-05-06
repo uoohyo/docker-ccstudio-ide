@@ -107,21 +107,19 @@ jobs:
 
           # README table — top 6 available (public_download: true, on Docker Hub), newest first
           echo "" > /tmp/table-readme.md
-          COUNT=0
 
-          echo "$VERSIONS" | jq -r '
-            [.[] | select(.public_download == true)]
+          # Get versions that are on Docker Hub, newest first, limit to 6
+          echo "$VERSIONS" | jq -r --argjson tags "$DOCKER_TAGS" '
+            [.[] | select(.public_download == true) | select(.version as $v | $tags | index($v) != null)]
             | sort_by([.major, .minor, .patch, .build] | map(tonumber))
-            | reverse[]
+            | reverse
+            | limit(6; .[])
             | .version
-          ' | while read -r version && [ $COUNT -lt 6 ]; do
-            if echo "$DOCKER_TAGS" | jq -e --arg v "$version" '. | index($v) != null' > /dev/null 2>&1; then
-              MAJOR=$(echo "$version" | cut -d'.' -f1)
-              BUILD_BADGE="https://img.shields.io/github/actions/workflow/status/${{ github.repository }}/build-all-versions.yml?branch=main&label=v${MAJOR}&style=flat-square"
-              BUILD_LINK="https://github.com/${{ github.repository }}/actions/workflows/build-all-versions.yml"
-              echo "        <tr><td>v${version}</td><td><a href=\"${BUILD_LINK}\"><img src=\"${BUILD_BADGE}\" alt=\"v${MAJOR}\" /></a></td></tr>" >> /tmp/table-readme.md
-              COUNT=$((COUNT + 1))
-            fi
+          ' | while read -r version; do
+            MAJOR=$(echo "$version" | cut -d'.' -f1)
+            BUILD_BADGE="https://img.shields.io/github/actions/workflow/status/${{ github.repository }}/build-all-versions.yml?branch=main&label=v${MAJOR}&style=flat-square"
+            BUILD_LINK="https://github.com/${{ github.repository }}/actions/workflows/build-all-versions.yml"
+            echo "        <tr><td>v${version}</td><td><a href=\"${BUILD_LINK}\"><img src=\"${BUILD_BADGE}\" alt=\"v${MAJOR}\" /></a></td></tr>" >> /tmp/table-readme.md
           done
 
           echo "Full table: $(wc -l < /tmp/table-full.md) rows"
