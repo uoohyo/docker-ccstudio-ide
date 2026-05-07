@@ -16,12 +16,13 @@
       <table>
         <tr><th>Version</th><th>Status</th></tr>
 <!-- VERSION_TABLE_START -->
-        <tr><td>v20.5.1.00012</td><td><a href="https://github.com/uoohyo/docker-ccstudio-ide/actions/workflows/build-all-versions.yml"><img src="https://img.shields.io/github/actions/workflow/status/uoohyo/docker-ccstudio-ide/build-all-versions.yml?branch=main&label=&style=flat-square" alt="build status" /></a></td></tr>
-        <tr><td>v20.5.0.00028</td><td><a href="https://github.com/uoohyo/docker-ccstudio-ide/actions/workflows/build-all-versions.yml"><img src="https://img.shields.io/github/actions/workflow/status/uoohyo/docker-ccstudio-ide/build-all-versions.yml?branch=main&label=&style=flat-square" alt="build status" /></a></td></tr>
-        <tr><td>v20.4.1.00004</td><td><a href="https://github.com/uoohyo/docker-ccstudio-ide/actions/workflows/build-all-versions.yml"><img src="https://img.shields.io/github/actions/workflow/status/uoohyo/docker-ccstudio-ide/build-all-versions.yml?branch=main&label=&style=flat-square" alt="build status" /></a></td></tr>
-        <tr><td>v20.4.0.00013</td><td><a href="https://github.com/uoohyo/docker-ccstudio-ide/actions/workflows/build-all-versions.yml"><img src="https://img.shields.io/github/actions/workflow/status/uoohyo/docker-ccstudio-ide/build-all-versions.yml?branch=main&label=&style=flat-square" alt="build status" /></a></td></tr>
-        <tr><td>v20.3.1.00005</td><td><a href="https://github.com/uoohyo/docker-ccstudio-ide/actions/workflows/build-all-versions.yml"><img src="https://img.shields.io/github/actions/workflow/status/uoohyo/docker-ccstudio-ide/build-all-versions.yml?branch=main&label=&style=flat-square" alt="build status" /></a></td></tr>
-        <tr><td>v20.3.0.00014</td><td><a href="https://github.com/uoohyo/docker-ccstudio-ide/actions/workflows/build-all-versions.yml"><img src="https://img.shields.io/github/actions/workflow/status/uoohyo/docker-ccstudio-ide/build-all-versions.yml?branch=main&label=&style=flat-square" alt="build status" /></a></td></tr>
+
+<tr><td>v20.5.1.00012</td><td><a href="https://hub.docker.com/r/uoohyo/ccstudio-ide/tags?name=20.5.1.00012"><img src="https://img.shields.io/badge/available-2496ED?style=flat-square&logo=docker&logoColor=white" alt="available" /></a></td></tr>
+<tr><td>v20.5.0.00028</td><td><a href="https://hub.docker.com/r/uoohyo/ccstudio-ide/tags?name=20.5.0.00028"><img src="https://img.shields.io/badge/available-2496ED?style=flat-square&logo=docker&logoColor=white" alt="available" /></a></td></tr>
+<tr><td>v20.4.1.00004</td><td><a href="https://hub.docker.com/r/uoohyo/ccstudio-ide/tags?name=20.4.1.00004"><img src="https://img.shields.io/badge/available-2496ED?style=flat-square&logo=docker&logoColor=white" alt="available" /></a></td></tr>
+<tr><td>v20.4.0.00013</td><td><a href="https://hub.docker.com/r/uoohyo/ccstudio-ide/tags?name=20.4.0.00013"><img src="https://img.shields.io/badge/available-2496ED?style=flat-square&logo=docker&logoColor=white" alt="available" /></a></td></tr>
+<tr><td>v20.3.1.00005</td><td><a href="https://hub.docker.com/r/uoohyo/ccstudio-ide/tags?name=20.3.1.00005"><img src="https://img.shields.io/badge/available-2496ED?style=flat-square&logo=docker&logoColor=white" alt="available" /></a></td></tr>
+<tr><td>v20.3.0.00014</td><td><a href="https://hub.docker.com/r/uoohyo/ccstudio-ide/tags?name=20.3.0.00014"><img src="https://img.shields.io/badge/available-2496ED?style=flat-square&logo=docker&logoColor=white" alt="available" /></a></td></tr>
 <!-- VERSION_TABLE_END -->
         <tr><td colspan="2" align="center"><a href="docs/versions.md"><b>📋 See all versions →</b></a></td></tr>
       </table>
