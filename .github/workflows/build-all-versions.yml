@@ -78,11 +78,12 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Build and push version-specific image
+      - name: Build version-specific image
         uses: docker/build-push-action@v6
         with:
           context: .
-          push: true
+          push: false
+          load: true
           build-args: |
             CCS_VERSION=${{ matrix.version_info.version }}
             MAJOR_VER=${{ matrix.version_info.major }}
@@ -93,7 +94,88 @@ jobs:
             uoohyo/ccstudio-ide:${{ matrix.version_info.version }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
-          platforms: linux/amd64
+
+      - name: Test image with full CCS installation
+        run: |
+          IMAGE="uoohyo/ccstudio-ide:${{ matrix.version_info.version }}"
+          VERSION="${{ matrix.version_info.version }}"
+          MAJOR="${{ matrix.version_info.major }}"
+
+          echo "=========================================="
+          echo "Testing CCS ${VERSION} installation"
+          echo "=========================================="
+
+          # Start container and wait for installation to complete
+          echo "→ Starting container and installing CCS (this may take 3-5 minutes)..."
+          CONTAINER_ID=$(docker run -d -e COMPONENTS=PF_C28 "${IMAGE}" sleep infinity)
+
+          # Wait for installation to complete (check for CCS executable)
+          echo "→ Waiting for CCS installation to complete..."
+          MAX_WAIT=600  # 10 minutes timeout
+          ELAPSED=0
+          INSTALLED=false
+
+          while [ $ELAPSED -lt $MAX_WAIT ]; do
+            if [ "$MAJOR" -ge 20 ]; then
+              # v20+: Check for ccs-server-cli
+              if docker exec "$CONTAINER_ID" test -f /opt/ti/ccs/ccs-server-cli 2>/dev/null; then
+                INSTALLED=true
+                break
+              fi
+            else
+              # v12 and below: Check for eclipse
+              if docker exec "$CONTAINER_ID" test -f /opt/ti/ccs/eclipse/eclipse 2>/dev/null; then
+                INSTALLED=true
+                break
+              fi
+            fi
+            sleep 10
+            ELAPSED=$((ELAPSED + 10))
+            echo "   ... waiting (${ELAPSED}s elapsed)"
+          done
+
+          if [ "$INSTALLED" = false ]; then
+            echo "❌ FAILED: CCS installation did not complete within ${MAX_WAIT} seconds"
+            docker logs "$CONTAINER_ID"
+            docker rm -f "$CONTAINER_ID"
+            exit 1
+          fi
+
+          echo "✓ CCS installation completed in ${ELAPSED} seconds"
+
+          # Test CCS executable
+          echo "→ Testing CCS executable..."
+          if [ "$MAJOR" -ge 20 ]; then
+            # v20+: Test ccs-server-cli
+            if ! docker exec "$CONTAINER_ID" /opt/ti/ccs/ccs-server-cli -help 2>&1 | grep -q "Usage:"; then
+              echo "❌ FAILED: ccs-server-cli not working properly"
+              docker rm -f "$CONTAINER_ID"
+              exit 1
+            fi
+            echo "✓ ccs-server-cli is working"
+          else
+            # v12 and below: Test eclipse
+            if ! docker exec "$CONTAINER_ID" /opt/ti/ccs/eclipse/eclipse -help 2>&1 | head -20 | grep -q "Eclipse"; then
+              echo "❌ FAILED: eclipse not working properly"
+              docker rm -f "$CONTAINER_ID"
+              exit 1
+            fi
+            echo "✓ eclipse is working"
+          fi
+
+          # Cleanup
+          docker rm -f "$CONTAINER_ID"
+
+          echo "=========================================="
+          echo "✅ All tests passed for CCS ${VERSION}"
+          echo "=========================================="
+
+      - name: Push verified image
+        run: |
+          IMAGE="uoohyo/ccstudio-ide:${{ matrix.version_info.version }}"
+          echo "Pushing verified image: ${IMAGE}"
+          docker push "${IMAGE}"
+          echo "✅ Image pushed successfully"
 
   tag-latest:
     needs: [detect-versions, build-and-push]
