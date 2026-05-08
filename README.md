@@ -5,7 +5,7 @@
 <!-- markdownlint-disable MD033 -->
 <table>
   <tr>
-    <td><img src="./.github/docker-ccstudio-ide.jpg" width="256" height="256" alt="docker-ccstudio-ide" /></td>
+    <td><img src="./.github/docker-ccstudio-ide.png" width="256" height="256" alt="docker-ccstudio-ide" /></td>
     <td valign="top">
       <b>CCS™ Version Build Status</b>
       <table>
@@ -55,29 +55,29 @@ Multiple families can be specified with a comma:
       -e COMPONENTS="PF_MSP430,PF_CC2X" \
       uoohyo/ccstudio-ide:20.5.0.00028
 
-| Product Family | Description |
-| --- | --- |
-| PF_MSP430 | MSP430 ultra-low power MCUs |
-| PF_MSP432 | SimpleLink™ MSP432™ low power + performance MCUs |
-| PF_CC2X | SimpleLink™ CC13xx and CC26xx Wireless MCUs |
-| PF_CC3X | SimpleLink™ Wi-Fi® CC32xx Wireless MCUs |
-| PF_CC2538 | CC2538 IEEE 802.15.4 Wireless MCUs |
-| PF_C28 | C2000 real-time MCUs |
-| PF_TM4C | TM4C12x ARM® Cortex®-M4F core-based MCUs |
-| PF_PGA | PGA Sensor Signal Conditioners |
-| PF_HERCULES | Hercules™ Safety MCUs |
-| PF_SITARA | Sitara™ AM3x, AM4x, AM5x and AM6x MPUs (will also include AM2x for CCS 10.x) |
-| PF_SITARA_MCU | Sitara™ AM2x MCUs (only supported in CCS 11.x and greater) |
-| PF_OMAPL | OMAP-L1x DSP + ARM9® Processor |
-| PF_DAVINCI | DaVinci (DM) Video Processors |
-| PF_OMAP | OMAP Processors |
-| PF_TDA_DRA | TDAx Driver Assistance SoCs & Jacinto DRAx Infotainment SoCs |
-| PF_C55 | C55x ultra-low-power DSP |
-| PF_C6000SC | C6000 Power-Optimized DSP |
-| PF_C66AK_KEYSTONE | 66AK2x multicore DSP + ARM® Processors & C66x KeyStone™ multicore DSP |
-| PF_MMWAVE | mmWave Sensors |
-| PF_C64MC | C64x multicore DSP |
-| PF_DIGITAL_POWER | UCD Digital Power Controllers |
+| Product Family    | Description                                                                  |
+| ----------------- | ---------------------------------------------------------------------------- |
+| PF_MSP430         | MSP430 ultra-low power MCUs                                                  |
+| PF_MSP432         | SimpleLink™ MSP432™ low power + performance MCUs                             |
+| PF_CC2X           | SimpleLink™ CC13xx and CC26xx Wireless MCUs                                  |
+| PF_CC3X           | SimpleLink™ Wi-Fi® CC32xx Wireless MCUs                                      |
+| PF_CC2538         | CC2538 IEEE 802.15.4 Wireless MCUs                                           |
+| PF_C28            | C2000 real-time MCUs                                                         |
+| PF_TM4C           | TM4C12x ARM® Cortex®-M4F core-based MCUs                                     |
+| PF_PGA            | PGA Sensor Signal Conditioners                                               |
+| PF_HERCULES       | Hercules™ Safety MCUs                                                        |
+| PF_SITARA         | Sitara™ AM3x, AM4x, AM5x and AM6x MPUs (will also include AM2x for CCS 10.x) |
+| PF_SITARA_MCU     | Sitara™ AM2x MCUs (only supported in CCS 11.x and greater)                   |
+| PF_OMAPL          | OMAP-L1x DSP + ARM9® Processor                                               |
+| PF_DAVINCI        | DaVinci (DM) Video Processors                                                |
+| PF_OMAP           | OMAP Processors                                                              |
+| PF_TDA_DRA        | TDAx Driver Assistance SoCs & Jacinto DRAx Infotainment SoCs                 |
+| PF_C55            | C55x ultra-low-power DSP                                                     |
+| PF_C6000SC        | C6000 Power-Optimized DSP                                                    |
+| PF_C66AK_KEYSTONE | 66AK2x multicore DSP + ARM® Processors & C66x KeyStone™ multicore DSP        |
+| PF_MMWAVE         | mmWave Sensors                                                               |
+| PF_C64MC          | C64x multicore DSP                                                           |
+| PF_DIGITAL_POWER  | UCD Digital Power Controllers                                                |
 
 ## Usage
 
