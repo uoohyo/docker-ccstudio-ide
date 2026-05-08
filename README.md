@@ -1,6 +1,11 @@
 # docker-ccstudio-ide
 
-[![Build](https://github.com/uoohyo/docker-ccstudio-ide/actions/workflows/build-all-versions.yml/badge.svg)](https://github.com/uoohyo/docker-ccstudio-ide/actions/workflows/build-all-versions.yml)
+[![Build](https://img.shields.io/github/actions/workflow/status/uoohyo/docker-ccstudio-ide/build-all-versions.yml?branch=main&style=flat-square&logo=github-actions&label=build)](https://github.com/uoohyo/docker-ccstudio-ide/actions/workflows/build-all-versions.yml)
+[![Docker Pulls](https://img.shields.io/docker/pulls/uoohyo/ccstudio-ide?style=flat-square&logo=docker)](https://hub.docker.com/r/uoohyo/ccstudio-ide)
+[![Docker Image Size](https://img.shields.io/docker/image-size/uoohyo/ccstudio-ide/latest?style=flat-square&logo=docker)](https://hub.docker.com/r/uoohyo/ccstudio-ide)
+[![Docker Image Version](https://img.shields.io/docker/v/uoohyo/ccstudio-ide?style=flat-square&logo=docker&label=version)](https://hub.docker.com/r/uoohyo/ccstudio-ide)
+[![GitHub Stars](https://img.shields.io/github/stars/uoohyo/docker-ccstudio-ide?style=flat-square&logo=github)](https://github.com/uoohyo/docker-ccstudio-ide/stargazers)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](https://opensource.org/licenses/MIT)
 
 <!-- markdownlint-disable MD033 -->
 <table>
@@ -11,6 +16,13 @@
       <table>
         <tr><th>Version</th><th>Status</th></tr>
 <!-- VERSION_TABLE_START -->
+
+<tr><td>v20.5.1.00012</td><td><a href="https://hub.docker.com/r/uoohyo/ccstudio-ide/tags?name=20.5.1.00012"><img src="https://img.shields.io/badge/available-2496ED?style=flat-square&logo=docker&logoColor=white" alt="available" /></a></td></tr>
+<tr><td>v20.5.0.00028</td><td><a href="https://hub.docker.com/r/uoohyo/ccstudio-ide/tags?name=20.5.0.00028"><img src="https://img.shields.io/badge/available-2496ED?style=flat-square&logo=docker&logoColor=white" alt="available" /></a></td></tr>
+<tr><td>v20.4.1.00004</td><td><a href="https://hub.docker.com/r/uoohyo/ccstudio-ide/tags?name=20.4.1.00004"><img src="https://img.shields.io/badge/available-2496ED?style=flat-square&logo=docker&logoColor=white" alt="available" /></a></td></tr>
+<tr><td>v20.4.0.00013</td><td><a href="https://hub.docker.com/r/uoohyo/ccstudio-ide/tags?name=20.4.0.00013"><img src="https://img.shields.io/badge/available-2496ED?style=flat-square&logo=docker&logoColor=white" alt="available" /></a></td></tr>
+<tr><td>v20.3.1.00005</td><td><a href="https://hub.docker.com/r/uoohyo/ccstudio-ide/tags?name=20.3.1.00005"><img src="https://img.shields.io/badge/available-2496ED?style=flat-square&logo=docker&logoColor=white" alt="available" /></a></td></tr>
+<tr><td>v20.3.0.00014</td><td><a href="https://hub.docker.com/r/uoohyo/ccstudio-ide/tags?name=20.3.0.00014"><img src="https://img.shields.io/badge/available-2496ED?style=flat-square&logo=docker&logoColor=white" alt="available" /></a></td></tr>
 <!-- VERSION_TABLE_END -->
         <tr><td colspan="2" align="center"><a href="docs/versions.md"><b>📋 See all versions →</b></a></td></tr>
       </table>

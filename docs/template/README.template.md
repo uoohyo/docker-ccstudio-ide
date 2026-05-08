@@ -1,6 +1,11 @@
 # docker-ccstudio-ide
 
-[![Build](https://github.com/uoohyo/docker-ccstudio-ide/actions/workflows/build-all-versions.yml/badge.svg)](https://github.com/uoohyo/docker-ccstudio-ide/actions/workflows/build-all-versions.yml)
+[![Build](https://img.shields.io/github/actions/workflow/status/uoohyo/docker-ccstudio-ide/build-all-versions.yml?branch=main&style=flat-square&logo=github-actions&label=build)](https://github.com/uoohyo/docker-ccstudio-ide/actions/workflows/build-all-versions.yml)
+[![Docker Pulls](https://img.shields.io/docker/pulls/uoohyo/ccstudio-ide?style=flat-square&logo=docker)](https://hub.docker.com/r/uoohyo/ccstudio-ide)
+[![Docker Image Size](https://img.shields.io/docker/image-size/uoohyo/ccstudio-ide/latest?style=flat-square&logo=docker)](https://hub.docker.com/r/uoohyo/ccstudio-ide)
+[![Docker Image Version](https://img.shields.io/docker/v/uoohyo/ccstudio-ide?style=flat-square&logo=docker&label=version)](https://hub.docker.com/r/uoohyo/ccstudio-ide)
+[![GitHub Stars](https://img.shields.io/github/stars/uoohyo/docker-ccstudio-ide?style=flat-square&logo=github)](https://github.com/uoohyo/docker-ccstudio-ide/stargazers)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](https://opensource.org/licenses/MIT)
 
 <!-- markdownlint-disable MD033 -->
 <table>

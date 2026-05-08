@@ -79,8 +79,8 @@ jobs:
 
           # Full table for docs/versions.md — all versions, newest first
           {
-            echo "| Version | Status | TI Download |"
-            echo "|---------|--------|-------------|"
+            echo "| Version | Status | TI Download | Docker Pull |"
+            echo "|---------|--------|-------------|-------------|"
 
             echo "$VERSIONS" | jq -r '
               [.[]]
@@ -91,37 +91,45 @@ jobs:
               MAJOR=$(echo "$version" | cut -d'.' -f1)
               MINOR=$(echo "$version" | cut -d'.' -f2)
               PATCH=$(echo "$version" | cut -d'.' -f3)
-              TI_LINK="https://www.ti.com/tool/download/CCSTUDIO/${MAJOR}.${MINOR}.${PATCH}"
 
-              if echo "$DOCKER_TAGS" | jq -e --arg v "$version" '. | index($v) != null' > /dev/null 2>&1; then
-                STATUS="✅ Available"
-              elif [ "$public_dl" = "true" ]; then
-                STATUS="🔨 Not Built Yet"
+              # v12+ uses 3-part version, v11 and below uses 4-part version
+              if [ "$MAJOR" -ge 12 ]; then
+                TI_LINK="https://www.ti.com/tool/download/CCSTUDIO/${MAJOR}.${MINOR}.${PATCH}"
               else
-                STATUS="⚠️ Not Supported"
+                TI_LINK="https://www.ti.com/tool/download/CCSTUDIO/${version}"
               fi
 
-              echo "| \`${version}\` | ${STATUS} | [Download](${TI_LINK}) |"
+              if echo "$DOCKER_TAGS" | jq -e --arg v "$version" '. | index($v) != null' > /dev/null 2>&1; then
+                STATUS="![available](https://img.shields.io/badge/available-2496ED?style=flat-square&logo=docker&logoColor=white)"
+                DOCKER_LINK="https://hub.docker.com/r/uoohyo/ccstudio-ide/tags?name=${version}"
+                DOCKER_PULL="[\`docker pull uoohyo/ccstudio-ide:${version}\`](${DOCKER_LINK})"
+              elif [ "$public_dl" = "true" ]; then
+                STATUS="![not built](https://img.shields.io/badge/not%20built-orange?style=flat-square)"
+                DOCKER_PULL="-"
+              else
+                STATUS="![not supported](https://img.shields.io/badge/not%20supported-gray?style=flat-square)"
+                DOCKER_PULL="-"
+              fi
+
+              echo "| \`${version}\` | ${STATUS} | [Download](${TI_LINK}) | ${DOCKER_PULL} |"
             done
           } > /tmp/table-full.md
 
           # README table — top 6 available (public_download: true, on Docker Hub), newest first
           echo "" > /tmp/table-readme.md
-          COUNT=0
 
-          echo "$VERSIONS" | jq -r '
-            [.[] | select(.public_download == true)]
+          # Get versions that are on Docker Hub, newest first, limit to 6
+          echo "$VERSIONS" | jq -r --argjson tags "$DOCKER_TAGS" '
+            [.[] | select(.public_download == true) | select(.version as $v | $tags | index($v) != null)]
             | sort_by([.major, .minor, .patch, .build] | map(tonumber))
-            | reverse[]
+            | reverse
+            | limit(6; .[])
             | .version
-          ' | while read -r version && [ $COUNT -lt 6 ]; do
-            if echo "$DOCKER_TAGS" | jq -e --arg v "$version" '. | index($v) != null' > /dev/null 2>&1; then
-              MAJOR=$(echo "$version" | cut -d'.' -f1)
-              BUILD_BADGE="https://img.shields.io/github/actions/workflow/status/${{ github.repository }}/build-all-versions.yml?branch=main&label=v${MAJOR}&style=flat-square"
-              BUILD_LINK="https://github.com/${{ github.repository }}/actions/workflows/build-all-versions.yml"
-              echo "        <tr><td>v${version}</td><td><a href=\"${BUILD_LINK}\"><img src=\"${BUILD_BADGE}\" alt=\"v${MAJOR}\" /></a></td></tr>" >> /tmp/table-readme.md
-              COUNT=$((COUNT + 1))
-            fi
+          ' | while read -r version; do
+            # Static badge showing version is available on Docker Hub
+            DOCKER_LINK="https://hub.docker.com/r/uoohyo/ccstudio-ide/tags?name=${version}"
+            BADGE="https://img.shields.io/badge/available-2496ED?style=flat-square&logo=docker&logoColor=white"
+            echo "<tr><td>v${version}</td><td><a href=\"${DOCKER_LINK}\"><img src=\"${BADGE}\" alt=\"available\" /></a></td></tr>" >> /tmp/table-readme.md
           done
 
           echo "Full table: $(wc -l < /tmp/table-full.md) rows"
