@@ -154,14 +154,15 @@ jobs:
           # Test CCS executable
           echo "→ Testing CCS executable..."
           if [ "$MAJOR" -ge 20 ]; then
-            # v20+: Theia-based server, no traditional -help flag.
-            # Entrypoint already verified the file; just confirm it's executable.
-            if ! docker exec "$CONTAINER_ID" test -x /opt/ti/ccs/eclipse/ccs-server-cli.sh 2>/dev/null; then
-              echo "❌ FAILED: ccs-server-cli.sh not executable"
+            # v20+: ccs-server-cli requires -noSplash -workspace <dir> -application <app> -ccs.help
+            # (bare -help is not a valid flag and produces no output)
+            if ! docker exec "$CONTAINER_ID" bash -c \
+              'mkdir -p /tmp/ccs_verify && /opt/ti/ccs/eclipse/ccs-server-cli.sh -noSplash -workspace /tmp/ccs_verify -application com.ti.ccs.apps.inspect -ccs.help 2>&1 | grep -q "Usage:"'; then
+              echo "❌ FAILED: ccs-server-cli not working properly"
               docker rm -f "$CONTAINER_ID"
               exit 1
             fi
-            echo "✓ ccs-server-cli.sh is executable"
+            echo "✓ ccs-server-cli is working"
           elif [ "$MAJOR" -ge 9 ]; then
             # v9-v12: Test eclipse at /opt/ti/ccs
             if ! docker exec "$CONTAINER_ID" /opt/ti/ccs/eclipse/eclipse -help 2>&1 | head -20 | grep -q "Eclipse"; then
