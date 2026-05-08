@@ -154,10 +154,11 @@ jobs:
           # Test CCS executable
           echo "→ Testing CCS executable..."
           if [ "$MAJOR" -ge 20 ]; then
-            # v20+: ccs-server-cli requires -noSplash -workspace <dir> -application <app> -ccs.help
-            # (bare -help is not a valid flag and produces no output)
+            # v20+: ccs-server-cli.sh uses $PWD to locate its bundled node and plugins,
+            # so it must be run from the eclipse directory.
+            # Bare -help is not a valid flag; use -ccs.help with a required application.
             if ! docker exec "$CONTAINER_ID" bash -c \
-              'mkdir -p /tmp/ccs_verify && /opt/ti/ccs/eclipse/ccs-server-cli.sh -noSplash -workspace /tmp/ccs_verify -application com.ti.ccs.apps.inspect -ccs.help 2>&1 | grep -q "Usage:"'; then
+              'mkdir -p /tmp/ccs_verify && cd /opt/ti/ccs/eclipse && ./ccs-server-cli.sh -noSplash -workspace /tmp/ccs_verify -application com.ti.ccs.apps.inspect -ccs.help 2>&1 | grep -q "Usage:"'; then
               echo "❌ FAILED: ccs-server-cli not working properly"
               docker rm -f "$CONTAINER_ID"
               exit 1
