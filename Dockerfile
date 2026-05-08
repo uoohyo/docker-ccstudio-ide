@@ -95,33 +95,41 @@ ENV COMPONENTS=PF_C28
 RUN echo ">>> Installing system dependencies..." && \
     dpkg --add-architecture i386 && \
     apt-get update && \
+    # Apply security updates
+    apt-get upgrade -y && \
+    # Install CCS runtime dependencies
     apt-get install --no-install-recommends -y \
+    # 32-bit libraries (required by CCS)
     libc6:i386 \
     libusb-0.1-4:i386 \
     libgconf-2-4:i386 \
     libncurses5:i386 \
     libtinfo5:i386 \
-    libpython2.7 \
+    # Core system libraries
     libudev1 \
     libasound2 \
     libatk1.0-0 \
     libcairo2 \
     libgtk-3-0 \
+    libgtk2.0-0 \
     libxi6 \
     libxtst6 \
     libxrender1 \
+    libxt6 \
+    # USB and device support
+    libusb-0.1-4 \
     libusb-1.0-0-dev \
+    # GNOME/GTK dependencies
     libgconf-2-4 \
+    libdbus-glib-1-2 \
+    libcanberra0 \
+    # Terminal support
     libncurses5 \
     libtinfo5 \
-    libusb-0.1-4 \
-    libdbus-glib-1-2 \
-    libgtk2.0-0 \
-    libxt6 \
-    libcanberra0 \
+    # Utilities
     ca-certificates \
-    build-essential \
     unzip && \
+    # Cleanup to reduce image size
     apt-get clean && rm -rf /var/lib/apt/lists/* && \
     echo ">>> Done."
 
