@@ -2,7 +2,7 @@
 
 This page lists all available Code Composer Studio (CCS) versions and their Docker image availability.
 
-**Last updated:** 2026-05-07 09:47:49 UTC
+**Last updated:** 2026-05-08 22:11:27 UTC
 
 <!-- VERSION_TABLE_START -->
 
@@ -55,7 +55,6 @@ This page lists all available Code Composer Studio (CCS) versions and their Dock
 | `7.3.0.00019` | ![available](https://img.shields.io/badge/available-2496ED?style=flat-square&logo=docker&logoColor=white) | [Download](https://www.ti.com/tool/download/CCSTUDIO/7.3.0.00019) | [`docker pull uoohyo/ccstudio-ide:7.3.0.00019`](https://hub.docker.com/r/uoohyo/ccstudio-ide/tags?name=7.3.0.00019) |
 | `7.2.0.00013` | ![available](https://img.shields.io/badge/available-2496ED?style=flat-square&logo=docker&logoColor=white) | [Download](https://www.ti.com/tool/download/CCSTUDIO/7.2.0.00013) | [`docker pull uoohyo/ccstudio-ide:7.2.0.00013`](https://hub.docker.com/r/uoohyo/ccstudio-ide/tags?name=7.2.0.00013) |
 | `7.1.0.00016` | ![available](https://img.shields.io/badge/available-2496ED?style=flat-square&logo=docker&logoColor=white) | [Download](https://www.ti.com/tool/download/CCSTUDIO/7.1.0.00016) | [`docker pull uoohyo/ccstudio-ide:7.1.0.00016`](https://hub.docker.com/r/uoohyo/ccstudio-ide/tags?name=7.1.0.00016) |
-| `7.0.0.00043` | ![available](https://img.shields.io/badge/available-2496ED?style=flat-square&logo=docker&logoColor=white) | [Download](https://www.ti.com/tool/download/CCSTUDIO/7.0.0.00043) | [`docker pull uoohyo/ccstudio-ide:7.0.0.00043`](https://hub.docker.com/r/uoohyo/ccstudio-ide/tags?name=7.0.0.00043) |
 | `6.2.0.00050` | ![not supported](https://img.shields.io/badge/not%20supported-gray?style=flat-square) | [Download](https://www.ti.com/tool/download/CCSTUDIO/6.2.0.00050) | - |
 | `6.1.3.00034` | ![not supported](https://img.shields.io/badge/not%20supported-gray?style=flat-square) | [Download](https://www.ti.com/tool/download/CCSTUDIO/6.1.3.00034) | - |
 | `6.1.2.00015` | ![not supported](https://img.shields.io/badge/not%20supported-gray?style=flat-square) | [Download](https://www.ti.com/tool/download/CCSTUDIO/6.1.2.00015) | - |
