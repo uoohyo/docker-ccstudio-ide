@@ -117,8 +117,10 @@ jobs:
 
           while [ $ELAPSED -lt $MAX_WAIT ]; do
             if [ "$MAJOR" -ge 20 ]; then
-              # v20+: Check for ccs-server-cli
-              if docker exec "$CONTAINER_ID" test -f /opt/ti/ccs/eclipse/ccs-server-cli.sh 2>/dev/null; then
+              # v20+: ccs-server-cli.sh is extracted within seconds but full install takes minutes.
+              # Wait until it's executable AND /opt/ccs-installer is gone (entrypoint completed).
+              if docker exec "$CONTAINER_ID" test -x /opt/ti/ccs/eclipse/ccs-server-cli.sh 2>/dev/null && \
+                 ! docker exec "$CONTAINER_ID" test -d /opt/ccs-installer 2>/dev/null; then
                 INSTALLED=true
                 break
               fi
@@ -152,13 +154,14 @@ jobs:
           # Test CCS executable
           echo "→ Testing CCS executable..."
           if [ "$MAJOR" -ge 20 ]; then
-            # v20+: Test ccs-server-cli
-            if ! docker exec "$CONTAINER_ID" /opt/ti/ccs/eclipse/ccs-server-cli.sh -help 2>&1 | grep -q "Usage:"; then
-              echo "❌ FAILED: ccs-server-cli not working properly"
+            # v20+: Theia-based server, no traditional -help flag.
+            # Entrypoint already verified the file; just confirm it's executable.
+            if ! docker exec "$CONTAINER_ID" test -x /opt/ti/ccs/eclipse/ccs-server-cli.sh 2>/dev/null; then
+              echo "❌ FAILED: ccs-server-cli.sh not executable"
               docker rm -f "$CONTAINER_ID"
               exit 1
             fi
-            echo "✓ ccs-server-cli is working"
+            echo "✓ ccs-server-cli.sh is executable"
           elif [ "$MAJOR" -ge 9 ]; then
             # v9-v12: Test eclipse at /opt/ti/ccs
             if ! docker exec "$CONTAINER_ID" /opt/ti/ccs/eclipse/eclipse -help 2>&1 | head -20 | grep -q "Eclipse"; then
