@@ -31,7 +31,7 @@
 </table>
 <!-- markdownlint-enable MD033 -->
 
-A Docker image providing a headless CI/CD environment for [Code Composer Studio (CCS)](https://www.ti.com/tool/CCSTUDIO), Texas Instruments' IDE for microcontrollers and processors. Each image ships with the CCS installer pre-extracted — no internet connection is required at runtime.
+A Docker image providing a headless CI/CD environment for [Code Composer Studio (CCS)](https://www.ti.com/tool/CCSTUDIO), Texas Instruments' IDE for embedded development. Each image ships with the CCS installer pre-extracted — no internet connection is required at runtime.
 
 > **Note:** CCS is installed on first container start. Expect **~3–5 minutes** for the installation to complete.
 
