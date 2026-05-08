@@ -163,6 +163,11 @@ async function scrapeVersions() {
   }
 
   // ── Step 4: build the final version list ──────────────────────────────────
+  // Exclusions: versions with known installation issues
+  const EXCLUDED_VERSIONS = [
+    '7.0.0.00043', // Requires X11 display even with --unattendedmodeui none
+  ];
+
   const versionList = [];
   for (const [key, v] of seen.entries()) {
     const info        = resolved.get(key) || { fullVersion: null, linuxSupported: false };
@@ -171,8 +176,16 @@ async function scrapeVersions() {
       ? fullVersion.split('.')
       : [v.major, v.minor, v.patch, v.build ?? '0'];
 
+    const version = fullVersion || `${v.major}.${v.minor}.${v.patch}.${v.build ?? '0'}`;
+
+    // Skip excluded versions
+    if (EXCLUDED_VERSIONS.includes(version)) {
+      console.error(`  Excluding ${version} (known installation issues)`);
+      continue;
+    }
+
     versionList.push({
-      version:         fullVersion || `${v.major}.${v.minor}.${v.patch}.${v.build ?? '0'}`,
+      version:         version,
       major:           parts[0],
       minor:           parts[1],
       patch:           parts[2],
