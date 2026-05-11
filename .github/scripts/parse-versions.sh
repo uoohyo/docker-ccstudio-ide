@@ -19,5 +19,5 @@ if ! SCRAPED=$(node "${SCRIPT_DIR}/scrape-versions.js" 2>/dev/null) || [ -z "$SC
     exit 1
 fi
 
-# Sort and mark latest
-echo "$SCRAPED" | node "${SCRIPT_DIR}/merge-versions.js"
+# Output already sorted with is_latest marked by scraper
+echo "$SCRAPED"
