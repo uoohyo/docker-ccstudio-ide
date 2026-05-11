@@ -69,7 +69,14 @@ RUN echo ">>> Downloading CCS ${CCS_VERSION}..." && \
 # ============================================
 # Stage 2: Runtime Image
 # ============================================
-FROM ubuntu:22.04
+# Base image selection based on CCS version
+# v7-v8:   Ubuntu 18.04 (officially tested)
+# v9-v11:  Ubuntu 20.04 (officially tested)
+# v12-v19: Ubuntu 22.04 (officially tested)
+# v20+:    Ubuntu 22.04 (officially tested)
+# Default: ubuntu:22.04 (supports all versions with proper dependencies)
+ARG BASE_IMAGE
+FROM ${BASE_IMAGE:-ubuntu:22.04}
 
 # Metadata
 LABEL maintainer="uoohyo <https://github.com/uoohyo>"

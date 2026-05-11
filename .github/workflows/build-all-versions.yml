@@ -78,6 +78,26 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
+      - name: Determine base image for version
+        id: base-image
+        run: |
+          MAJOR="${{ matrix.version_info.major }}"
+
+          # Select base image based on CCS version
+          # Based on official TI documentation for each version
+          if [ "$MAJOR" -le 8 ]; then
+            BASE_IMAGE="ubuntu:18.04"
+            echo "Using Ubuntu 18.04 for CCS v${MAJOR} (officially tested)"
+          elif [ "$MAJOR" -le 11 ]; then
+            BASE_IMAGE="ubuntu:20.04"
+            echo "Using Ubuntu 20.04 for CCS v${MAJOR} (officially tested)"
+          else
+            BASE_IMAGE="ubuntu:22.04"
+            echo "Using Ubuntu 22.04 for CCS v${MAJOR} (officially tested)"
+          fi
+
+          echo "base_image=${BASE_IMAGE}" >> $GITHUB_OUTPUT
+
       - name: Build version-specific image
         uses: docker/build-push-action@v6
         with:
@@ -85,6 +105,7 @@ jobs:
           push: false
           load: true
           build-args: |
+            BASE_IMAGE=${{ steps.base-image.outputs.base_image }}
             CCS_VERSION=${{ matrix.version_info.version }}
             MAJOR_VER=${{ matrix.version_info.major }}
             MINOR_VER=${{ matrix.version_info.minor }}
