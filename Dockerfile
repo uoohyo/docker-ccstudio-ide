@@ -99,18 +99,18 @@ ENV CCS_VERSION=${CCS_VERSION}
 ENV COMPONENTS=PF_C28
 
 # System Dependencies
-# Comprehensive dependency installation for CCS v7-v20 support
+# Version-aware dependency installation based on CCS version and base image
 # Ref: https://software-dl.ti.com/ccs/esd/documents/ccsv{7,8,9,10,11,12}_linux_host_support.html
-RUN echo ">>> Installing system dependencies..." && \
+RUN echo ">>> Installing system dependencies for CCS v${MAJOR_VER}..." && \
     dpkg --add-architecture i386 && \
     apt-get update && \
-    # Apply security updates
     apt-get upgrade -y && \
-    # Install CCS runtime dependencies
+    \
+    # ============================================
+    # Common dependencies (ALL versions)
+    # ============================================
     apt-get install --no-install-recommends -y \
-    # 32-bit libraries (required by all CCS versions)
-    libc6:i386 \
-    libc6-i386 \
+    # 32-bit libraries base
     libusb-0.1-4:i386 \
     libusb-0.1-4 \
     libgconf-2-4:i386 \
@@ -125,27 +125,55 @@ RUN echo ">>> Installing system dependencies..." && \
     libatk1.0-0 \
     libcairo2 \
     libgtk-3-0 \
-    libgtk2.0-0 \
     libxi6 \
     libxtst6 \
     libxrender1 \
     libxt6 \
-    # USB and device support
     libusb-1.0-0-dev \
-    # GNOME/GTK dependencies
     libdbus-glib-1-2 \
     libcanberra0 \
-    # Python 2.7 libraries (required by v9-v12)
-    libpython2.7 \
-    # v7-v8 specific packages
-    binutils \
-    libxss1 \
-    # Utilities
     ca-certificates \
     unzip && \
+    \
+    # ============================================
+    # Version-specific dependencies
+    # ============================================
+    # v7-v8: binutils, libxss1, libc6:i386
+    if [ "${MAJOR_VER}" -le 8 ]; then \
+        echo ">>> Installing v7-v8 specific packages..." && \
+        apt-get install --no-install-recommends -y \
+            libc6:i386 \
+            binutils \
+            libxss1; \
+    fi && \
+    \
+    # v9-v11: Python 2.7, GTK 2.0, libc6:i386
+    if [ "${MAJOR_VER}" -ge 9 ] && [ "${MAJOR_VER}" -le 11 ]; then \
+        echo ">>> Installing v9-v11 specific packages..." && \
+        apt-get install --no-install-recommends -y \
+            libc6:i386 \
+            libpython2.7 \
+            libgtk2.0-0; \
+    fi && \
+    \
+    # v12-v19: Python 2.7, libc6-i386 (different package name)
+    if [ "${MAJOR_VER}" -ge 12 ] && [ "${MAJOR_VER}" -le 19 ]; then \
+        echo ">>> Installing v12-v19 specific packages..." && \
+        apt-get install --no-install-recommends -y \
+            libc6-i386 \
+            libpython2.7; \
+    fi && \
+    \
+    # v20+: libc6-i386 only (no Python 2.7)
+    if [ "${MAJOR_VER}" -ge 20 ]; then \
+        echo ">>> Installing v20+ specific packages..." && \
+        apt-get install --no-install-recommends -y \
+            libc6-i386; \
+    fi && \
+    \
     # Cleanup to reduce image size
     apt-get clean && rm -rf /var/lib/apt/lists/* && \
-    echo ">>> Done."
+    echo ">>> Dependencies installed for CCS v${MAJOR_VER}"
 
 # Copy pre-downloaded and extracted CCS installer from downloader stage
 COPY --from=downloader /ccs_installer /opt/ccs-installer
