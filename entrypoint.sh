@@ -59,6 +59,11 @@ XVFB_PID=""
 if [ "${MAJOR_VER}" -le 8 ]; then
     echo ">>> Starting virtual display for v${MAJOR_VER} BitRock installer..."
     export DISPLAY=:99
+    # GTK environment variables to prevent initialization deadlock
+    export GDK_BACKEND=x11
+    export GTK_MODULES=""
+    export NO_AT_BRIDGE=1
+    export LIBGL_ALWAYS_INDIRECT=1
     Xvfb :99 -ac -screen 0 1024x768x24 -nolisten tcp > /dev/null 2>&1 &
     XVFB_PID=$!
     sleep 2
