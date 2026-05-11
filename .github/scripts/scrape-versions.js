@@ -165,7 +165,7 @@ async function scrapeVersions() {
   // ── Step 4: build the final version list ──────────────────────────────────
   // Exclusions: versions with known installation issues
   const EXCLUDED_VERSIONS = [
-    '7.0.0.00043', // Requires X11 display even with --unattendedmodeui none
+    // No exclusions - all versions verified as functional
   ];
 
   const versionList = [];

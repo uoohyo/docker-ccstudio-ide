@@ -12,7 +12,13 @@ ARG MINOR_VER=5
 ARG PATCH_VER=0
 ARG BUILD_VER=00028
 
-# Base image for runtime stage (can be overridden at build time)
+# Base image for runtime stage
+# Automatically determined based on CCS major version:
+# v7-v8:   Ubuntu 16.04 (BitRock installer compatibility)
+# v9-v11:  Ubuntu 20.04 (officially tested)
+# v12-v19: Ubuntu 22.04 (officially tested)
+# v20+:    Ubuntu 24.04 (officially supported)
+# Note: Can be overridden at build time with --build-arg BASE_IMAGE=...
 ARG BASE_IMAGE=ubuntu:22.04
 
 # ============================================
@@ -84,12 +90,6 @@ RUN echo ">>> Downloading CCS ${CCS_VERSION}..." && \
 # ============================================
 # Stage 2: Runtime Image
 # ============================================
-# Base image selection based on CCS version
-# v7-v8:   Ubuntu 18.04 (officially tested)
-# v9-v11:  Ubuntu 20.04 (officially tested)
-# v12-v19: Ubuntu 22.04 (officially tested)
-# v20+:    Ubuntu 22.04 (officially tested)
-# Default: ubuntu:22.04 (supports all versions with proper dependencies)
 FROM ${BASE_IMAGE}
 
 # Metadata
@@ -124,16 +124,18 @@ RUN echo ">>> Installing system dependencies for CCS v${MAJOR_VER}..." && \
     # Common dependencies (ALL versions)
     # ============================================
     apt-get install --no-install-recommends -y \
-    # 32-bit libraries base
+    # USB/Debug probe support (TI official docs: all versions)
     libusb-0.1-4:i386 \
     libusb-0.1-4 \
+    libusb-1.0-0-dev \
+    # Configuration and terminal (TI official docs: all versions)
     libgconf-2-4:i386 \
     libgconf-2-4 \
     libncurses5:i386 \
     libncurses5 \
     libtinfo5:i386 \
     libtinfo5 \
-    # Core system libraries
+    # Core system libraries (required for Eclipse v7-v19 / discovered via install failures)
     libudev1 \
     libasound2 \
     libatk1.0-0 \
@@ -143,17 +145,15 @@ RUN echo ">>> Installing system dependencies for CCS v${MAJOR_VER}..." && \
     libxtst6 \
     libxrender1 \
     libxt6 \
-    libusb-1.0-0-dev \
-    libdbus-glib-1-2 \
-    libcanberra0 \
     ca-certificates \
     unzip && \
     \
     # ============================================
     # Version-specific dependencies
     # ============================================
-    # v7-v8: GTK2 (32-bit + 64-bit), Python2.7, binutils, libxss1, libc6:i386, Xvfb (for BitRock installer GUI support)
-    # BitRock installer requires 32-bit GTK libraries (ref: sirde/ccs-v7-ci)
+    # v7-v8: Full 32-bit GUI stack for BitRock installer + Python 2.7
+    # BitRock installer requires 32-bit GTK libraries (ref: sirde/ccs-v7-ci, commit bd35839)
+    # Xvfb provides virtual display for headless Docker environment
     if [ "${MAJOR_VER}" -le 8 ]; then \
         echo ">>> Installing v7-v8 specific packages..." && \
         apt-get install --no-install-recommends -y \
@@ -180,27 +180,37 @@ RUN echo ">>> Installing system dependencies for CCS v${MAJOR_VER}..." && \
             binutils \
             libxss1 \
             xvfb \
-            x11-utils; \
+            x11-utils \
+            libdbus-glib-1-2 \
+            libcanberra0; \
     fi && \
     \
-    # v9-v11: Python 2.7, GTK 2.0, libc6:i386
+    # v9-v19: Eclipse-based IDE (requires GUI libraries, Python 2.7, D-Bus)
+    # Discovered via installation failures (commit e1db630, 9d4461d)
+    if [ "${MAJOR_VER}" -ge 9 ] && [ "${MAJOR_VER}" -le 19 ]; then \
+        echo ">>> Installing v9-v19 Eclipse dependencies..." && \
+        apt-get install --no-install-recommends -y \
+            libpython2.7 \
+            libdbus-glib-1-2 \
+            libcanberra0; \
+    fi && \
+    \
+    # v9-v11: GTK 2.0 + libc6:i386 (TI official docs)
     if [ "${MAJOR_VER}" -ge 9 ] && [ "${MAJOR_VER}" -le 11 ]; then \
         echo ">>> Installing v9-v11 specific packages..." && \
         apt-get install --no-install-recommends -y \
             libc6:i386 \
-            libpython2.7 \
             libgtk2.0-0; \
     fi && \
     \
-    # v12-v19: Python 2.7, libc6-i386 (different package name)
+    # v12-v19: libc6-i386 (package name changed in Ubuntu 20.04+)
     if [ "${MAJOR_VER}" -ge 12 ] && [ "${MAJOR_VER}" -le 19 ]; then \
         echo ">>> Installing v12-v19 specific packages..." && \
         apt-get install --no-install-recommends -y \
-            libc6-i386 \
-            libpython2.7; \
+            libc6-i386; \
     fi && \
     \
-    # v20+: libc6-i386 only (no Python 2.7)
+    # v20+: Theia-based IDE (minimal dependencies, no Python/GTK)
     if [ "${MAJOR_VER}" -ge 20 ]; then \
         echo ">>> Installing v20+ specific packages..." && \
         apt-get install --no-install-recommends -y \
