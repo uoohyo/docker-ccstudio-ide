@@ -116,7 +116,10 @@ ENV COMPONENTS=PF_C28
 # Version-aware dependency installation based on CCS version and base image
 # Ref: https://software-dl.ti.com/ccs/esd/documents/ccsv{7,8,9,10,11,12}_linux_host_support.html
 RUN echo ">>> Installing system dependencies for CCS v${MAJOR_VER}..." && \
-    dpkg --add-architecture i386 && \
+    # Enable i386 architecture only for v7-v19 (32-bit libraries needed)
+    if [ "${MAJOR_VER}" -le 19 ]; then \
+        dpkg --add-architecture i386; \
+    fi && \
     apt-get update && \
     apt-get upgrade -y && \
     \
@@ -124,34 +127,57 @@ RUN echo ">>> Installing system dependencies for CCS v${MAJOR_VER}..." && \
     # Common dependencies (ALL versions)
     # ============================================
     apt-get install --no-install-recommends -y \
-    # USB/Debug probe support (TI official docs: all versions)
-    libusb-0.1-4:i386 \
-    libusb-0.1-4 \
+    # USB/Debug probe support
     libusb-1.0-0-dev \
-    # Configuration and terminal (TI official docs: all versions)
-    libgconf-2-4:i386 \
-    libgconf-2-4 \
-    libncurses5:i386 \
-    libncurses5 \
-    libtinfo5:i386 \
-    libtinfo5 \
-    # Core system libraries (required for Eclipse v7-v19 / discovered via install failures)
+    # Core system libraries
     libudev1 \
-    libasound2 \
-    libatk1.0-0 \
-    libcairo2 \
-    libgtk-3-0 \
-    libxi6 \
-    libxtst6 \
-    libxrender1 \
-    libxt6 \
     ca-certificates \
     unzip && \
+    \
+    # 32-bit USB libraries (v7-v19 only - for legacy debug probes)
+    if [ "${MAJOR_VER}" -le 19 ]; then \
+        apt-get install --no-install-recommends -y libusb-1.0-0:i386; \
+    fi && \
+    \
+    # ============================================
+    # Eclipse-specific dependencies (v7-v19 only)
+    # ============================================
+    if [ "${MAJOR_VER}" -le 19 ]; then \
+        echo ">>> Installing Eclipse dependencies (v7-v19)..." && \
+        apt-get install --no-install-recommends -y \
+            libasound2 \
+            libatk1.0-0 \
+            libcairo2 \
+            libgtk-3-0 \
+            libxi6 \
+            libxtst6 \
+            libxrender1 \
+            libxt6; \
+    fi && \
+    \
+    # Old Ubuntu (16.04/18.04) packages for v7-v11
+    if [ "${MAJOR_VER}" -le 11 ]; then \
+        echo ">>> Installing legacy packages (v7-v11)..." && \
+        (apt-get install --no-install-recommends -y \
+            libusb-0.1-4:i386 \
+            libusb-0.1-4 \
+            libgconf-2-4:i386 \
+            libgconf-2-4 \
+            libncurses5:i386 \
+            libncurses5 \
+            libtinfo5:i386 \
+            libtinfo5 || \
+        apt-get install --no-install-recommends -y \
+            libncurses6:i386 \
+            libncurses6 \
+            libtinfo6:i386 \
+            libtinfo6); \
+    fi && \
     \
     # ============================================
     # Version-specific dependencies
     # ============================================
-    # v7-v8: Full 32-bit GUI stack for BitRock installer + Python 2.7
+    # v7-v8: Full 32-bit GUI stack for BitRock installer (Ubuntu 16.04 base required)
     # BitRock installer requires 32-bit GTK libraries (ref: sirde/ccs-v7-ci, commit bd35839)
     # Xvfb provides virtual display for headless Docker environment
     if [ "${MAJOR_VER}" -le 8 ]; then \
@@ -171,7 +197,6 @@ RUN echo ">>> Installing system dependencies for CCS v${MAJOR_VER}..." && \
             libatk1.0-0:i386 \
             libcairo2:i386 \
             libcups2:i386 \
-            libgconf-2-4:i386 \
             libgcrypt20:i386 \
             libice6:i386 \
             libsm6:i386 \
@@ -185,14 +210,16 @@ RUN echo ">>> Installing system dependencies for CCS v${MAJOR_VER}..." && \
             libcanberra0; \
     fi && \
     \
-    # v9-v19: Eclipse-based IDE (requires GUI libraries, Python 2.7, D-Bus)
-    # Discovered via installation failures (commit e1db630, 9d4461d)
+    # v9-v19: Eclipse-based IDE (requires GUI libraries, D-Bus)
+    # Python 2.7 only for v9-v11 (removed from Ubuntu 22.04+)
     if [ "${MAJOR_VER}" -ge 9 ] && [ "${MAJOR_VER}" -le 19 ]; then \
         echo ">>> Installing v9-v19 Eclipse dependencies..." && \
         apt-get install --no-install-recommends -y \
-            libpython2.7 \
             libdbus-glib-1-2 \
             libcanberra0; \
+        if [ "${MAJOR_VER}" -le 11 ]; then \
+            apt-get install --no-install-recommends -y libpython2.7 || true; \
+        fi; \
     fi && \
     \
     # v9-v11: GTK 2.0 + libc6:i386 (TI official docs)
