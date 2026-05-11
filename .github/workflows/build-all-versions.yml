@@ -84,16 +84,19 @@ jobs:
           MAJOR="${{ matrix.version_info.major }}"
 
           # Select base image based on CCS version
-          # Based on official TI documentation for each version
+          # Based on official TI documentation and community testing
           if [ "$MAJOR" -le 8 ]; then
-            BASE_IMAGE="ubuntu:18.04"
-            echo "Using Ubuntu 18.04 for CCS v${MAJOR} (officially tested)"
+            BASE_IMAGE="ubuntu:16.04"
+            echo "Using Ubuntu 16.04 for CCS v${MAJOR} (BitRock installer compatibility)"
           elif [ "$MAJOR" -le 11 ]; then
             BASE_IMAGE="ubuntu:20.04"
             echo "Using Ubuntu 20.04 for CCS v${MAJOR} (officially tested)"
-          else
+          elif [ "$MAJOR" -le 19 ]; then
             BASE_IMAGE="ubuntu:22.04"
             echo "Using Ubuntu 22.04 for CCS v${MAJOR} (officially tested)"
+          else
+            BASE_IMAGE="ubuntu:24.04"
+            echo "Using Ubuntu 24.04 for CCS v${MAJOR} (officially supported)"
           fi
 
           echo "base_image=${BASE_IMAGE}" >> $GITHUB_OUTPUT

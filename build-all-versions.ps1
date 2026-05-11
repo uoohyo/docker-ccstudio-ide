@@ -28,11 +28,13 @@ function Get-BaseImage {
     param([int]$major)
 
     if ($major -le 8) {
-        return "ubuntu:18.04"
+        return "ubuntu:16.04"
     } elseif ($major -le 11) {
         return "ubuntu:20.04"
-    } else {
+    } elseif ($major -le 19) {
         return "ubuntu:22.04"
+    } else {
+        return "ubuntu:24.04"
     }
 }
 

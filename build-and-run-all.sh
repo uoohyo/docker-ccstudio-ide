@@ -13,11 +13,13 @@ CURRENT=0
 get_base_image() {
     local major=$1
     if [ "$major" -le 8 ]; then
-        echo "ubuntu:18.04"
+        echo "ubuntu:16.04"
     elif [ "$major" -le 11 ]; then
         echo "ubuntu:20.04"
-    else
+    elif [ "$major" -le 19 ]; then
         echo "ubuntu:22.04"
+    else
+        echo "ubuntu:24.04"
     fi
 }
 
