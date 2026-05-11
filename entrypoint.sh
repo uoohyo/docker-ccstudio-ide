@@ -29,6 +29,21 @@ else
 fi
 export PATH="${CCS_ECLIPSE_DIR}:${PATH}"
 
+# v7-v8 specific dependencies
+# These older versions require additional packages for dependency checker to pass
+# Ref: https://software-dl.ti.com/ccs/esd/documents/ccsv7_linux_host_support.html
+if [ "${MAJOR_VER}" -lt 9 ]; then
+    echo "=== Installing v7-v8 Dependencies ==="
+    echo "Version ${VER} requires additional packages for compatibility"
+    apt-get update > /dev/null 2>&1
+    apt-get install -y --no-install-recommends \
+        binutils \
+        libxss1 \
+        > /dev/null 2>&1
+    echo ">>> binutils and libxss1 installed"
+    echo ""
+fi
+
 # Download and Install CCS
 # v20+:  zip package, CCS_ prefix, URL path: MAJOR.MINOR.PATCH
 # v12-:  tar.gz package, CCS prefix, URL path: MAJOR.MINOR.PATCH (v12) or MAJOR.MINOR.PATCH.BUILD (v11-)
