@@ -92,6 +92,8 @@ ENV CCS_VERSION=${CCS_VERSION}
 ENV COMPONENTS=PF_C28
 
 # System Dependencies
+# Comprehensive dependency installation for CCS v7-v20 support
+# Ref: https://software-dl.ti.com/ccs/esd/documents/ccsv{7,8,9,10,11,12}_linux_host_support.html
 RUN echo ">>> Installing system dependencies..." && \
     dpkg --add-architecture i386 && \
     apt-get update && \
@@ -99,12 +101,17 @@ RUN echo ">>> Installing system dependencies..." && \
     apt-get upgrade -y && \
     # Install CCS runtime dependencies
     apt-get install --no-install-recommends -y \
-    # 32-bit libraries (required by CCS)
+    # 32-bit libraries (required by all CCS versions)
     libc6:i386 \
+    libc6-i386 \
     libusb-0.1-4:i386 \
+    libusb-0.1-4 \
     libgconf-2-4:i386 \
+    libgconf-2-4 \
     libncurses5:i386 \
+    libncurses5 \
     libtinfo5:i386 \
+    libtinfo5 \
     # Core system libraries
     libudev1 \
     libasound2 \
@@ -117,15 +124,15 @@ RUN echo ">>> Installing system dependencies..." && \
     libxrender1 \
     libxt6 \
     # USB and device support
-    libusb-0.1-4 \
     libusb-1.0-0-dev \
     # GNOME/GTK dependencies
-    libgconf-2-4 \
     libdbus-glib-1-2 \
     libcanberra0 \
-    # Terminal support
-    libncurses5 \
-    libtinfo5 \
+    # Python 2.7 libraries (required by v9-v12)
+    libpython2.7 \
+    # v7-v8 specific packages
+    binutils \
+    libxss1 \
     # Utilities
     ca-certificates \
     unzip && \

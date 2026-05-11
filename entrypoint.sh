@@ -29,19 +29,17 @@ else
 fi
 export PATH="${CCS_ECLIPSE_DIR}:${PATH}"
 
-# v7-v8 specific dependencies
-# These older versions require additional packages for dependency checker to pass
-# Ref: https://software-dl.ti.com/ccs/esd/documents/ccsv7_linux_host_support.html
-if [ "${MAJOR_VER}" -lt 9 ]; then
-    echo "=== Installing v7-v8 Dependencies ==="
-    echo "Version ${VER} requires additional packages for compatibility"
-    apt-get update > /dev/null 2>&1
-    apt-get install -y --no-install-recommends \
-        binutils \
-        libxss1 \
-        > /dev/null 2>&1
-    echo ">>> binutils and libxss1 installed"
-    echo ""
+# Docker-specific stubs for installer compatibility
+# All versions need these due to udev/kernel interactions in installers
+if [ "${MAJOR_VER}" -ge 20 ]; then
+    # v20+: BlackHawk installer calls udev/kernel commands
+    ln -sf /bin/true /usr/local/bin/udevadm
+    ln -sf /bin/true /sbin/start_udev
+    ln -sf /bin/true /sbin/udevd
+    ln -sf /bin/true /sbin/modprobe
+    ln -sf /bin/true /sbin/insmod
+    ln -sf /bin/true /sbin/rmmod
+    mkdir -p /etc/udev/rules.d /run/udev /lib/modules
 fi
 
 # Download and Install CCS
@@ -77,14 +75,6 @@ _show_install_logs() {
 # Install CCS from pre-downloaded and extracted files
 echo ">>> Using pre-downloaded and extracted CCS ${VER} installer..."
 if [ "${MAJOR_VER}" -ge 20 ]; then
-    ln -sf /bin/true /usr/local/bin/udevadm
-    ln -sf /bin/true /sbin/start_udev
-    ln -sf /bin/true /sbin/udevd
-    ln -sf /bin/true /sbin/modprobe
-    ln -sf /bin/true /sbin/insmod
-    ln -sf /bin/true /sbin/rmmod
-    mkdir -p /etc/udev/rules.d /run/udev /lib/modules
-
     echo ">>> Installing CCS ${VER} (this may take a while)..."
     cd "/opt/ccs-installer/CCS_${VER}_linux"
     chmod +x "ccs_setup_${VER}.run"
