@@ -2,9 +2,9 @@
     "version": "2.0.0",
     "tasks": [
         {
-            "label": "Docker: Build Image",
+            "label": "Docker: Build Image (Default)",
             "type": "shell",
-            "command": "docker build -t uoohyo/ccstudio-ide:latest .",
+            "command": "docker build -t ccs-local:latest .",
             "options": {
                 "cwd": "${workspaceFolder}"
             },
@@ -19,9 +19,23 @@
             "problemMatcher": []
         },
         {
-            "label": "Docker: Run (Default - v20.5.0.00028)",
+            "label": "Docker: Build Image (Custom Version)",
             "type": "shell",
-            "command": "docker run -it -e MAJOR_VER=20 -e MINOR_VER=5 -e PATCH_VER=0 -e BUILD_VER=00028 -e COMPONENTS=PF_C28 uoohyo/ccstudio-ide:latest",
+            "command": "docker build --build-arg CCS_VERSION=${input:ccsVersion} --build-arg BASE_IMAGE=${input:baseImage} -t ccs-local:${input:ccsVersion} .",
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "group": "build",
+            "presentation": {
+                "reveal": "always",
+                "panel": "new"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "Docker: Run Latest (Interactive)",
+            "type": "shell",
+            "command": "docker run -it --rm ccs-local:latest",
             "group": "test",
             "presentation": {
                 "reveal": "always",
@@ -30,10 +44,10 @@
             "problemMatcher": []
         },
         {
-            "label": "Docker: Run (v20.2.0.00012)",
+            "label": "Docker: Pull from Hub (Latest)",
             "type": "shell",
-            "command": "docker run -it -e MAJOR_VER=20 -e MINOR_VER=2 -e PATCH_VER=0 -e BUILD_VER=00012 -e COMPONENTS=PF_C28 uoohyo/ccstudio-ide:latest",
-            "group": "test",
+            "command": "docker pull uoohyo/ccstudio-ide:latest",
+            "group": "none",
             "presentation": {
                 "reveal": "always",
                 "panel": "new"
@@ -41,15 +55,41 @@
             "problemMatcher": []
         },
         {
-            "label": "Docker: Run (v12.8.0.00012)",
+            "label": "Docker: Run Hub Image (Specific Version)",
             "type": "shell",
-            "command": "docker run -it -e MAJOR_VER=12 -e MINOR_VER=8 -e PATCH_VER=0 -e BUILD_VER=00012 -e COMPONENTS=PF_C28 uoohyo/ccstudio-ide:latest",
+            "command": "docker run -it --rm uoohyo/ccstudio-ide:${input:hubVersion}",
             "group": "test",
             "presentation": {
                 "reveal": "always",
                 "panel": "new"
             },
             "problemMatcher": []
+        }
+    ],
+    "inputs": [
+        {
+            "id": "ccsVersion",
+            "type": "promptString",
+            "description": "CCS Version (e.g., 20.5.0.00028)",
+            "default": "20.5.0.00028"
+        },
+        {
+            "id": "baseImage",
+            "type": "pickString",
+            "description": "Base Ubuntu Image",
+            "options": [
+                "ubuntu:16.04",
+                "ubuntu:20.04",
+                "ubuntu:22.04",
+                "ubuntu:24.04"
+            ],
+            "default": "ubuntu:22.04"
+        },
+        {
+            "id": "hubVersion",
+            "type": "promptString",
+            "description": "Docker Hub version tag (e.g., 20.5.0.00028)",
+            "default": "latest"
         }
     ]
 }
