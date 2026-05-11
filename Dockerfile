@@ -152,11 +152,13 @@ RUN echo ">>> Installing system dependencies for CCS v${MAJOR_VER}..." && \
     # ============================================
     # Version-specific dependencies
     # ============================================
-    # v7-v8: binutils, libxss1, libc6:i386, Xvfb (for BitRock installer GUI support)
+    # v7-v8: GTK2, Python2.7, binutils, libxss1, libc6:i386, Xvfb (for BitRock installer GUI support)
     if [ "${MAJOR_VER}" -le 8 ]; then \
         echo ">>> Installing v7-v8 specific packages..." && \
         apt-get install --no-install-recommends -y \
             libc6:i386 \
+            libpython2.7 \
+            libgtk2.0-0 \
             binutils \
             libxss1 \
             xvfb \
