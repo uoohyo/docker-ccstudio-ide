@@ -1,7 +1,7 @@
 # ============================================
-# Stage 1: Download CCS Installer
+# Global Build Arguments
 # ============================================
-FROM ubuntu:22.04 AS downloader
+# These must be declared before any FROM statement
 
 # CCS Version (can be overridden at build time)
 ARG CCS_VERSION=20.5.0.00028
@@ -11,6 +11,21 @@ ARG MAJOR_VER=20
 ARG MINOR_VER=5
 ARG PATCH_VER=0
 ARG BUILD_VER=00028
+
+# Base image for runtime stage (can be overridden at build time)
+ARG BASE_IMAGE=ubuntu:22.04
+
+# ============================================
+# Stage 1: Download CCS Installer
+# ============================================
+FROM ubuntu:22.04 AS downloader
+
+# Re-declare args needed in this stage
+ARG CCS_VERSION
+ARG MAJOR_VER
+ARG MINOR_VER
+ARG PATCH_VER
+ARG BUILD_VER
 
 # Install download and extraction tools
 RUN apt-get update && \
@@ -75,19 +90,18 @@ RUN echo ">>> Downloading CCS ${CCS_VERSION}..." && \
 # v12-v19: Ubuntu 22.04 (officially tested)
 # v20+:    Ubuntu 22.04 (officially tested)
 # Default: ubuntu:22.04 (supports all versions with proper dependencies)
-ARG BASE_IMAGE
-FROM ${BASE_IMAGE:-ubuntu:22.04}
+FROM ${BASE_IMAGE}
 
 # Metadata
 LABEL maintainer="uoohyo <https://github.com/uoohyo>"
 LABEL description="TI Code Composer Studio IDE for Docker with pre-downloaded installer"
 
-# CCS Version Environment Variables
-ARG CCS_VERSION=20.5.0.00028
-ARG MAJOR_VER=20
-ARG MINOR_VER=5
-ARG PATCH_VER=0
-ARG BUILD_VER=00028
+# Re-declare args needed in this stage
+ARG CCS_VERSION
+ARG MAJOR_VER
+ARG MINOR_VER
+ARG PATCH_VER
+ARG BUILD_VER
 
 ENV MAJOR_VER=${MAJOR_VER}
 ENV MINOR_VER=${MINOR_VER}
