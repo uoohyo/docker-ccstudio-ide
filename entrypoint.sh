@@ -54,6 +54,29 @@ echo "Version    : ${VER}"
 echo "Components : ${COMPONENTS}"
 echo ""
 
+# Start Xvfb for v7-v8 BitRock installers (GUI framework support in headless environment)
+XVFB_PID=""
+if [ "${MAJOR_VER}" -le 8 ]; then
+    echo ">>> Starting virtual display for v${MAJOR_VER} BitRock installer..."
+    export DISPLAY=:99
+    Xvfb :99 -ac -screen 0 1024x768x24 -nolisten tcp > /dev/null 2>&1 &
+    XVFB_PID=$!
+    sleep 2
+    echo ">>> Virtual display ready (DISPLAY=${DISPLAY}, PID=${XVFB_PID})"
+fi
+
+# Cleanup function for Xvfb
+cleanup_xvfb() {
+    if [ -n "$XVFB_PID" ]; then
+        echo ">>> Stopping virtual display..."
+        kill $XVFB_PID 2>/dev/null || true
+        wait $XVFB_PID 2>/dev/null || true
+    fi
+}
+
+# Trap to ensure Xvfb cleanup on exit
+trap cleanup_xvfb EXIT
+
 # Create temporary directory for installation
 INSTALL_LOG="/tmp/ccs_install.log"
 mkdir -p /ccs_install
