@@ -153,7 +153,7 @@ RUN echo ">>> Installing system dependencies for CCS v${MAJOR_VER}..." && \
     # Version-specific dependencies
     # ============================================
     # v7-v8: GTK2 (32-bit + 64-bit), Python2.7, binutils, libxss1, libc6:i386, Xvfb (for BitRock installer GUI support)
-    # BitRock installer requires 32-bit GTK libraries
+    # BitRock installer requires 32-bit GTK libraries (ref: sirde/ccs-v7-ci)
     if [ "${MAJOR_VER}" -le 8 ]; then \
         echo ">>> Installing v7-v8 specific packages..." && \
         apt-get install --no-install-recommends -y \
@@ -161,10 +161,22 @@ RUN echo ">>> Installing system dependencies for CCS v${MAJOR_VER}..." && \
             libpython2.7 \
             libgtk2.0-0 \
             libgtk2.0-0:i386 \
+            libgtk-3-0:i386 \
             libcanberra-gtk-module:i386 \
             gtk2-engines-murrine:i386 \
+            libgdk-pixbuf2.0-0:i386 \
             libx11-6:i386 \
             libstdc++6:i386 \
+            libasound2:i386 \
+            libatk1.0-0:i386 \
+            libcairo2:i386 \
+            libcups2:i386 \
+            libgconf-2-4:i386 \
+            libgcrypt20:i386 \
+            libice6:i386 \
+            libsm6:i386 \
+            libxt6:i386 \
+            libxtst6:i386 \
             binutils \
             libxss1 \
             xvfb \

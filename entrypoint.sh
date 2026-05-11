@@ -130,8 +130,9 @@ else
     else
         echo ">>> Note: --enable-components is not supported for CCS v9 and below. Installing all components."
         INSTALLER_BIN=$(find "/opt/ccs-installer/CCS${VER}_linux-x64" -maxdepth 1 \( -name "*.bin" -o -name "*.run" \) | sort | head -1)
-        # v7-v8: run with DISPLAY=:99 for Xvfb support
+        # v7-v8: run with DISPLAY=:99 for Xvfb support and Java options
         if [ "${MAJOR_VER}" -le 8 ]; then
+            export JAVA_TOOL_OPTIONS=-Xss1280k
             DISPLAY=:99 "${INSTALLER_BIN}" \
                 --mode unattended --prefix /opt/ti \
                 --install-BlackHawk false --install-Segger false 2>&1 | tee "${INSTALL_LOG}"
