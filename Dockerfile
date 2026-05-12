@@ -19,12 +19,12 @@ ARG BUILD_VER=00028
 # v12-v19: Ubuntu 22.04 (officially tested)
 # v20+:    Ubuntu 24.04 (officially supported)
 # Note: Can be overridden at build time with --build-arg BASE_IMAGE=...
-ARG BASE_IMAGE=ubuntu:22.04
+ARG BASE_IMAGE=ubuntu:24.04
 
 # ============================================
 # Stage 1: Download CCS Installer
 # ============================================
-FROM ubuntu:22.04 AS downloader
+FROM ubuntu:24.04 AS downloader
 
 # Re-declare args needed in this stage
 ARG CCS_VERSION
