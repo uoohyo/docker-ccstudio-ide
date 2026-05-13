@@ -117,6 +117,18 @@ Build a project:
 
 For more commands, see the [CCS command-line documentation](https://software-dl.ti.com/ccs/esd/documents/users_guide_ccs_20.0.0/ccs_project-command-line.html).
 
+## CCS v20.0.x Patches
+
+Docker images for CCS v20.0.0, v20.0.1, and v20.0.2 include automatic patches to fix critical bugs in `ccs-server-cli.sh`:
+
+- **POSIX shell syntax**: Fixed `==` operators (Bash-only) to `=` (POSIX-compliant)
+- **Path resolution**: Added symlinks for robust plugin/node path resolution
+- **Node.js PATH**: Bundled Node.js is now in system PATH
+
+These bugs were fixed by Texas Instruments in CCS v20.1.0+. Patches are automatically applied during container startup for affected versions only.
+
+**Related**: [Issue #16](https://github.com/uoohyo/docker-ccstudio-ide/issues/16)
+
 ## License
 
 [MIT License](./LICENSE)
