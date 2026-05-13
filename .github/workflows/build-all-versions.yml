@@ -57,11 +57,11 @@ jobs:
           echo "Linux-supported: $(echo "$BUILD_VERSIONS" | jq '. | length')"
           echo "Latest: ${LATEST}"
 
-  build-and-push:
+  build:
     needs: detect-versions
     runs-on: ubuntu-latest
     strategy:
-      max-parallel: 1
+      max-parallel: 10
       matrix:
         version_info: ${{ fromJson(needs.detect-versions.outputs.build_versions) }}
       fail-fast: false
@@ -71,12 +71,6 @@ jobs:
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
-
-      - name: Log in to Docker Hub
-        uses: docker/login-action@v4
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Determine base image for version
         id: base-image
@@ -116,8 +110,8 @@ jobs:
             BUILD_VER=${{ matrix.version_info.build }}
           tags: |
             uoohyo/ccstudio-ide:${{ matrix.version_info.version }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha,scope=build-${{ matrix.version_info.version }}
+          cache-to: type=gha,mode=max,scope=build-${{ matrix.version_info.version }}
 
       - name: Test image with full CCS installation
         run: |
@@ -212,15 +206,66 @@ jobs:
           echo "✅ All tests passed for CCS ${VERSION}"
           echo "=========================================="
 
-      - name: Push verified image
+  push:
+    needs: [detect-versions, build]
+    runs-on: ubuntu-latest
+    strategy:
+      max-parallel: 1
+      matrix:
+        version_info: ${{ fromJson(needs.detect-versions.outputs.build_versions) }}
+      fail-fast: false
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v4
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Determine base image for version
+        id: base-image
         run: |
-          IMAGE="uoohyo/ccstudio-ide:${{ matrix.version_info.version }}"
-          echo "Pushing verified image: ${IMAGE}"
-          docker push "${IMAGE}"
-          echo "✅ Image pushed successfully"
+          MAJOR="${{ matrix.version_info.major }}"
+
+          if [ "$MAJOR" -le 8 ]; then
+            BASE_IMAGE="ubuntu:16.04"
+          elif [ "$MAJOR" -le 11 ]; then
+            BASE_IMAGE="ubuntu:20.04"
+          elif [ "$MAJOR" -le 19 ]; then
+            BASE_IMAGE="ubuntu:22.04"
+          else
+            BASE_IMAGE="ubuntu:24.04"
+          fi
+
+          echo "base_image=${BASE_IMAGE}" >> $GITHUB_OUTPUT
+
+      - name: Build and push image from cache
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          push: true
+          build-args: |
+            BASE_IMAGE=${{ steps.base-image.outputs.base_image }}
+            CCS_VERSION=${{ matrix.version_info.version }}
+            MAJOR_VER=${{ matrix.version_info.major }}
+            MINOR_VER=${{ matrix.version_info.minor }}
+            PATCH_VER=${{ matrix.version_info.patch }}
+            BUILD_VER=${{ matrix.version_info.build }}
+          tags: |
+            uoohyo/ccstudio-ide:${{ matrix.version_info.version }}
+          cache-from: type=gha,scope=build-${{ matrix.version_info.version }}
+
+      - name: Verify push
+        run: |
+          echo "✅ Image pushed: uoohyo/ccstudio-ide:${{ matrix.version_info.version }}"
 
   tag-latest:
-    needs: [detect-versions, build-and-push]
+    needs: [detect-versions, push]
     runs-on: ubuntu-latest
     if: '!cancelled()'
     steps:
@@ -253,7 +298,7 @@ jobs:
           docker push uoohyo/ccstudio-ide:latest
 
   handle-failure:
-    needs: [detect-versions, build-and-push]
+    needs: [detect-versions, build, push]
     runs-on: ubuntu-latest
     if: failure() && !cancelled()
     permissions:
