@@ -9,6 +9,10 @@ on:
         description: 'Versions to build (JSON array, leave empty for auto-detect via scraper)'
         required: false
         default: ''
+      force_rebuild:
+        description: 'Force rebuild even if already on Docker Hub'
+        type: boolean
+        default: false
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
@@ -20,6 +24,7 @@ jobs:
       versions: ${{ steps.parse.outputs.versions }}
       build_versions: ${{ steps.parse.outputs.build_versions }}
       latest_version: ${{ steps.parse.outputs.latest_version }}
+      has_versions: ${{ steps.parse.outputs.has_versions }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
@@ -45,20 +50,58 @@ jobs:
           { echo "versions<<${DELIMITER}"; echo "${VERSIONS}"; echo "${DELIMITER}"; } >> $GITHUB_OUTPUT
 
           # Publicly downloadable versions only (for the build matrix), sorted oldest-first
-          BUILD_VERSIONS=$(echo "$VERSIONS" | jq '[.[] | select(.public_download == true)] | sort_by([.major, .minor, .patch, .build] | map(tonumber))')
+          ALL_BUILD_VERSIONS=$(echo "$VERSIONS" | jq '[.[] | select(.public_download == true)] | sort_by([.major, .minor, .patch, .build] | map(tonumber))')
+
+          # Filter out already-built versions unless force_rebuild is requested
+          if [ "${{ github.event.inputs.force_rebuild }}" = "true" ]; then
+            BUILD_VERSIONS="$ALL_BUILD_VERSIONS"
+            echo "force_rebuild=true: building all $(echo "$BUILD_VERSIONS" | jq '. | length') versions"
+          else
+            echo "Checking Docker Hub for existing tags..."
+            EXISTING_TAGS=""
+            PAGE=1
+            while true; do
+              RESPONSE=$(curl -s "https://hub.docker.com/v2/repositories/uoohyo/ccstudio-ide/tags?page=${PAGE}&page_size=100")
+              TAGS=$(echo "$RESPONSE" | jq -r '.results[].name' | grep -E '^[0-9]+\.[0-9]+\.[0-9]+(\.[0-9]+)?$' || true)
+              [ -z "$TAGS" ] && break
+              EXISTING_TAGS="${EXISTING_TAGS}${TAGS}"$'\n'
+              NEXT=$(echo "$RESPONSE" | jq -r '.next')
+              [ "$NEXT" = "null" ] && break
+              PAGE=$((PAGE + 1))
+            done
+            TAGS_JSON=$(echo "$EXISTING_TAGS" | grep -v '^$' | jq -R . | jq -s . || echo '[]')
+            echo "Found $(echo "$TAGS_JSON" | jq '. | length') existing Docker Hub tags"
+
+            # Keep only versions not yet on Docker Hub
+            BUILD_VERSIONS=$(echo "$ALL_BUILD_VERSIONS" | jq --argjson tags "$TAGS_JSON" \
+              '[.[] | select(.version as $v | ($tags | index($v)) == null)]')
+            echo "Versions to build: $(echo "$BUILD_VERSIONS" | jq '. | length') (skipping already-built)"
+          fi
+
           DELIMITER2=$(openssl rand -hex 8)
           { echo "build_versions<<${DELIMITER2}"; echo "${BUILD_VERSIONS}"; echo "${DELIMITER2}"; } >> $GITHUB_OUTPUT
 
-          # Latest = highest version (last after ascending sort)
-          LATEST=$(echo "$BUILD_VERSIONS" | jq -r '.[-1].version')
+          # Latest = highest version among ALL buildable (not just new), for tag-latest
+          LATEST=$(echo "$ALL_BUILD_VERSIONS" | jq -r '.[-1].version')
           echo "latest_version=${LATEST}" >> $GITHUB_OUTPUT
 
+          # Flag to skip build/push matrix when nothing new to build
+          VERSION_COUNT=$(echo "$BUILD_VERSIONS" | jq '. | length')
+          if [ "$VERSION_COUNT" -gt 0 ]; then
+            echo "has_versions=true" >> $GITHUB_OUTPUT
+          else
+            echo "has_versions=false" >> $GITHUB_OUTPUT
+            echo "All versions are already on Docker Hub — skipping build and push"
+          fi
+
           echo "Total versions: $(echo "$VERSIONS" | jq '. | length')"
-          echo "Linux-supported: $(echo "$BUILD_VERSIONS" | jq '. | length')"
+          echo "Linux-supported: $(echo "$ALL_BUILD_VERSIONS" | jq '. | length')"
+          echo "To build: ${VERSION_COUNT}"
           echo "Latest: ${LATEST}"
 
   build:
     needs: detect-versions
+    if: needs.detect-versions.outputs.has_versions == 'true'
     runs-on: ubuntu-latest
     strategy:
       max-parallel: 10
@@ -208,6 +251,7 @@ jobs:
 
   push:
     needs: [detect-versions, build]
+    if: needs.detect-versions.outputs.has_versions == 'true'
     runs-on: ubuntu-latest
     strategy:
       max-parallel: 1
@@ -244,11 +288,12 @@ jobs:
 
           echo "base_image=${BASE_IMAGE}" >> $GITHUB_OUTPUT
 
-      - name: Build and push image from cache
+      - name: Build image from cache
         uses: docker/build-push-action@v7
         with:
           context: .
-          push: true
+          push: false
+          load: true
           build-args: |
             BASE_IMAGE=${{ steps.base-image.outputs.base_image }}
             CCS_VERSION=${{ matrix.version_info.version }}
@@ -260,9 +305,23 @@ jobs:
             uoohyo/ccstudio-ide:${{ matrix.version_info.version }}
           cache-from: type=gha,scope=build-${{ matrix.version_info.version }}
 
-      - name: Verify push
+      - name: Push image with retry
         run: |
-          echo "✅ Image pushed: uoohyo/ccstudio-ide:${{ matrix.version_info.version }}"
+          IMAGE="uoohyo/ccstudio-ide:${{ matrix.version_info.version }}"
+          MAX_RETRIES=3
+          for i in $(seq 1 $MAX_RETRIES); do
+            echo "→ Push attempt ${i}/${MAX_RETRIES}..."
+            if docker push "${IMAGE}"; then
+              echo "✅ Image pushed: ${IMAGE}"
+              exit 0
+            fi
+            if [ "$i" -lt "$MAX_RETRIES" ]; then
+              echo "⚠️ Push failed (attempt ${i}/${MAX_RETRIES}), retrying in 60s..."
+              sleep 60
+            fi
+          done
+          echo "❌ Push failed after ${MAX_RETRIES} attempts"
+          exit 1
 
   tag-latest:
     needs: [detect-versions, push]
@@ -300,7 +359,9 @@ jobs:
   handle-failure:
     needs: [detect-versions, build, push]
     runs-on: ubuntu-latest
-    if: failure() && !cancelled()
+    # Only run on the first attempt — re-runs inherit attempt 1's failure state,
+    # causing failure() to evaluate true even when re-run jobs all succeed.
+    if: failure() && !cancelled() && github.run_attempt == 1
     permissions:
       issues: write
     steps:
