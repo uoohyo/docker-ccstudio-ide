@@ -144,6 +144,7 @@ jobs:
           context: .
           push: false
           load: true
+          provenance: false
           build-args: |
             BASE_IMAGE=${{ steps.base-image.outputs.base_image }}
             CCS_VERSION=${{ matrix.version_info.version }}
@@ -294,6 +295,7 @@ jobs:
           context: .
           push: false
           load: true
+          provenance: false
           build-args: |
             BASE_IMAGE=${{ steps.base-image.outputs.base_image }}
             CCS_VERSION=${{ matrix.version_info.version }}
