@@ -2,12 +2,14 @@
 
 This page lists all available Code Composer Studio (CCS) versions and their Docker image availability.
 
-**Last updated:** 2026-05-14 04:54:07 UTC
+**Last updated:** 2026-10-20 03:23:51 UTC
 
 <!-- VERSION_TABLE_START -->
 
 | Version | Status | TI Download | Docker Pull |
 |---------|--------|-------------|-------------|
+| `21.0.1.00010` | ![available](https://img.shields.io/badge/available-2496ED?style=flat-square&logo=docker&logoColor=white) | [Download](https://www.ti.com/tool/download/CCSTUDIO/21.0.1) | [`docker pull uoohyo/ccstudio-ide:21.0.1.00010`](https://hub.docker.com/r/uoohyo/ccstudio-ide/tags?name=21.0.1.00010) |
+| `21.0.0.00014` | ![available](https://img.shields.io/badge/available-2496ED?style=flat-square&logo=docker&logoColor=white) | [Download](https://www.ti.com/tool/download/CCSTUDIO/21.0.0) | [`docker pull uoohyo/ccstudio-ide:21.0.0.00014`](https://hub.docker.com/r/uoohyo/ccstudio-ide/tags?name=21.0.0.00014) |
 | `20.5.1.00012` | ![available](https://img.shields.io/badge/available-2496ED?style=flat-square&logo=docker&logoColor=white) | [Download](https://www.ti.com/tool/download/CCSTUDIO/20.5.1) | [`docker pull uoohyo/ccstudio-ide:20.5.1.00012`](https://hub.docker.com/r/uoohyo/ccstudio-ide/tags?name=20.5.1.00012) |
 | `20.5.0.00028` | ![available](https://img.shields.io/badge/available-2496ED?style=flat-square&logo=docker&logoColor=white) | [Download](https://www.ti.com/tool/download/CCSTUDIO/20.5.0) | [`docker pull uoohyo/ccstudio-ide:20.5.0.00028`](https://hub.docker.com/r/uoohyo/ccstudio-ide/tags?name=20.5.0.00028) |
 | `20.4.1.00004` | ![available](https://img.shields.io/badge/available-2496ED?style=flat-square&logo=docker&logoColor=white) | [Download](https://www.ti.com/tool/download/CCSTUDIO/20.4.1) | [`docker pull uoohyo/ccstudio-ide:20.4.1.00004`](https://hub.docker.com/r/uoohyo/ccstudio-ide/tags?name=20.4.1.00004) |
@@ -56,20 +58,20 @@ This page lists all available Code Composer Studio (CCS) versions and their Dock
 | `7.2.0.00013` | ![available](https://img.shields.io/badge/available-2496ED?style=flat-square&logo=docker&logoColor=white) | [Download](https://www.ti.com/tool/download/CCSTUDIO/7.2.0.00013) | [`docker pull uoohyo/ccstudio-ide:7.2.0.00013`](https://hub.docker.com/r/uoohyo/ccstudio-ide/tags?name=7.2.0.00013) |
 | `7.1.0.00016` | ![available](https://img.shields.io/badge/available-2496ED?style=flat-square&logo=docker&logoColor=white) | [Download](https://www.ti.com/tool/download/CCSTUDIO/7.1.0.00016) | [`docker pull uoohyo/ccstudio-ide:7.1.0.00016`](https://hub.docker.com/r/uoohyo/ccstudio-ide/tags?name=7.1.0.00016) |
 | `7.0.0.00043` | ![available](https://img.shields.io/badge/available-2496ED?style=flat-square&logo=docker&logoColor=white) | [Download](https://www.ti.com/tool/download/CCSTUDIO/7.0.0.00043) | [`docker pull uoohyo/ccstudio-ide:7.0.0.00043`](https://hub.docker.com/r/uoohyo/ccstudio-ide/tags?name=7.0.0.00043) |
-| `6.2.0.00050` | ![not supported](https://img.shields.io/badge/not%20supported-gray?style=flat-square) | [Download](https://www.ti.com/tool/download/CCSTUDIO/6.2.0.00050) | - |
-| `6.1.3.00034` | ![not supported](https://img.shields.io/badge/not%20supported-gray?style=flat-square) | [Download](https://www.ti.com/tool/download/CCSTUDIO/6.1.3.00034) | - |
-| `6.1.2.00015` | ![not supported](https://img.shields.io/badge/not%20supported-gray?style=flat-square) | [Download](https://www.ti.com/tool/download/CCSTUDIO/6.1.2.00015) | - |
-| `6.1.1.00022` | ![not supported](https://img.shields.io/badge/not%20supported-gray?style=flat-square) | [Download](https://www.ti.com/tool/download/CCSTUDIO/6.1.1.00022) | - |
-| `6.1.0.00104` | ![not supported](https://img.shields.io/badge/not%20supported-gray?style=flat-square) | [Download](https://www.ti.com/tool/download/CCSTUDIO/6.1.0.00104) | - |
-| `6.0.1.00040` | ![not supported](https://img.shields.io/badge/not%20supported-gray?style=flat-square) | [Download](https://www.ti.com/tool/download/CCSTUDIO/6.0.1.00040) | - |
-| `6.0.0.00190` | ![not supported](https://img.shields.io/badge/not%20supported-gray?style=flat-square) | [Download](https://www.ti.com/tool/download/CCSTUDIO/6.0.0.00190) | - |
-| `5.5.0.00077` | ![not supported](https://img.shields.io/badge/not%20supported-gray?style=flat-square) | [Download](https://www.ti.com/tool/download/CCSTUDIO/5.5.0.00077) | - |
-| `5.4.0.00091` | ![not supported](https://img.shields.io/badge/not%20supported-gray?style=flat-square) | [Download](https://www.ti.com/tool/download/CCSTUDIO/5.4.0.00091) | - |
-| `5.3.0.00090` | ![not supported](https://img.shields.io/badge/not%20supported-gray?style=flat-square) | [Download](https://www.ti.com/tool/download/CCSTUDIO/5.3.0.00090) | - |
-| `5.2.1.00018` | ![not supported](https://img.shields.io/badge/not%20supported-gray?style=flat-square) | [Download](https://www.ti.com/tool/download/CCSTUDIO/5.2.1.00018) | - |
-| `5.2.0.00069` | ![not supported](https://img.shields.io/badge/not%20supported-gray?style=flat-square) | [Download](https://www.ti.com/tool/download/CCSTUDIO/5.2.0.00069) | - |
-| `5.1.1.00033` | ![not supported](https://img.shields.io/badge/not%20supported-gray?style=flat-square) | [Download](https://www.ti.com/tool/download/CCSTUDIO/5.1.1.00033) | - |
-| `5.1.0.09000` | ![not supported](https://img.shields.io/badge/not%20supported-gray?style=flat-square) | [Download](https://www.ti.com/tool/download/CCSTUDIO/5.1.0.09000) | - |
+| `6.2.0.00050` | ![not built](https://img.shields.io/badge/not%20built-orange?style=flat-square) | [Download](https://www.ti.com/tool/download/CCSTUDIO/6.2.0.00050) | - |
+| `6.1.3.00034` | ![not built](https://img.shields.io/badge/not%20built-orange?style=flat-square) | [Download](https://www.ti.com/tool/download/CCSTUDIO/6.1.3.00034) | - |
+| `6.1.2.00015` | ![not built](https://img.shields.io/badge/not%20built-orange?style=flat-square) | [Download](https://www.ti.com/tool/download/CCSTUDIO/6.1.2.00015) | - |
+| `6.1.1.00022` | ![not built](https://img.shields.io/badge/not%20built-orange?style=flat-square) | [Download](https://www.ti.com/tool/download/CCSTUDIO/6.1.1.00022) | - |
+| `6.1.0.00104` | ![not built](https://img.shields.io/badge/not%20built-orange?style=flat-square) | [Download](https://www.ti.com/tool/download/CCSTUDIO/6.1.0.00104) | - |
+| `6.0.1.00040` | ![not built](https://img.shields.io/badge/not%20built-orange?style=flat-square) | [Download](https://www.ti.com/tool/download/CCSTUDIO/6.0.1.00040) | - |
+| `6.0.0.00190` | ![not built](https://img.shields.io/badge/not%20built-orange?style=flat-square) | [Download](https://www.ti.com/tool/download/CCSTUDIO/6.0.0.00190) | - |
+| `5.5.0.00077` | ![not built](https://img.shields.io/badge/not%20built-orange?style=flat-square) | [Download](https://www.ti.com/tool/download/CCSTUDIO/5.5.0.00077) | - |
+| `5.4.0.00091` | ![not built](https://img.shields.io/badge/not%20built-orange?style=flat-square) | [Download](https://www.ti.com/tool/download/CCSTUDIO/5.4.0.00091) | - |
+| `5.3.0.00090` | ![not built](https://img.shields.io/badge/not%20built-orange?style=flat-square) | [Download](https://www.ti.com/tool/download/CCSTUDIO/5.3.0.00090) | - |
+| `5.2.1.00018` | ![not built](https://img.shields.io/badge/not%20built-orange?style=flat-square) | [Download](https://www.ti.com/tool/download/CCSTUDIO/5.2.1.00018) | - |
+| `5.2.0.00069` | ![not built](https://img.shields.io/badge/not%20built-orange?style=flat-square) | [Download](https://www.ti.com/tool/download/CCSTUDIO/5.2.0.00069) | - |
+| `5.1.1.00033` | ![not built](https://img.shields.io/badge/not%20built-orange?style=flat-square) | [Download](https://www.ti.com/tool/download/CCSTUDIO/5.1.1.00033) | - |
+| `5.1.0.09000` | ![not built](https://img.shields.io/badge/not%20built-orange?style=flat-square) | [Download](https://www.ti.com/tool/download/CCSTUDIO/5.1.0.09000) | - |
 | `5.0.3.00028` | ![not supported](https://img.shields.io/badge/not%20supported-gray?style=flat-square) | [Download](https://www.ti.com/tool/download/CCSTUDIO/5.0.3.00028) | - |
 | `5.0.2.00006` | ![not supported](https://img.shields.io/badge/not%20supported-gray?style=flat-square) | [Download](https://www.ti.com/tool/download/CCSTUDIO/5.0.2.00006) | - |
 | `5.0.1.00036` | ![not supported](https://img.shields.io/badge/not%20supported-gray?style=flat-square) | [Download](https://www.ti.com/tool/download/CCSTUDIO/5.0.1.00036) | - |
