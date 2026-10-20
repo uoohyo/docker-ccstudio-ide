@@ -69,29 +69,27 @@ jobs:
       - name: Get existing versions from Docker Hub
         id: hub-versions
         run: |
+          set -euo pipefail
           echo "Fetching existing tags from Docker Hub..."
 
-          # Get all tags from Docker Hub (handle API errors gracefully)
-          RESPONSE=$(curl -s "https://hub.docker.com/v2/repositories/uoohyo/ccstudio-ide/tags?page_size=100")
+          # Fetch every page. Fail closed if Docker Hub is unavailable,
+          # rather than accidentally rebuilding every existing version.
+          TAGS_FILE=$(mktemp)
+          NEXT_URL="https://hub.docker.com/v2/repositories/uoohyo/ccstudio-ide/tags?page_size=100"
+          while [ -n "$NEXT_URL" ]; do
+            RESPONSE=$(curl -fsSL --retry 3 --retry-delay 2 "$NEXT_URL")
+            echo "$RESPONSE" | jq -e '.results | type == "array"' > /dev/null
+            echo "$RESPONSE" | jq -r '.results[].name' \
+              | grep -E '^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$' >> "$TAGS_FILE" || true
+            NEXT_URL=$(echo "$RESPONSE" | jq -r '.next // empty')
+          done
 
-          # Check if repository exists (API returns error object if not found)
-          if echo "$RESPONSE" | jq -e '.message' > /dev/null 2>&1; then
-            echo "Repository not found or API error: $(echo "$RESPONSE" | jq -r '.message')"
-            echo "tags=[]" >> $GITHUB_OUTPUT
-          else
-            # Extract version tags
-            TAGS=$(echo "$RESPONSE" | jq -r '.results[].name' 2>/dev/null | grep -E '^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$' || echo "")
-
-            if [ -z "$TAGS" ]; then
-              echo "No existing version tags found on Docker Hub"
-              echo "tags=[]" >> $GITHUB_OUTPUT
-            else
-              # Convert to JSON array
-              TAGS_JSON=$(echo "$TAGS" | jq -R . | jq -s .)
-              echo "tags=${TAGS_JSON}" >> $GITHUB_OUTPUT
-              echo "Existing Docker Hub versions: $(echo "$TAGS_JSON" | jq '. | length')"
-            fi
-          fi
+          # Outputs must be a single line unless the multiline delimiter
+          # syntax is used. jq -c prevents "Invalid format" errors.
+          TAGS_JSON=$(sort -u "$TAGS_FILE" | jq -R -s -c 'split("\n") | map(select(length > 0))')
+          echo "tags=$TAGS_JSON" >> "$GITHUB_OUTPUT"
+          echo "Existing Docker Hub versions: $(echo "$TAGS_JSON" | jq 'length')"
+          rm -f "$TAGS_FILE"
 
       - name: Find missing versions
         id: missing-versions
