@@ -263,3 +263,7 @@ RUN sed -i 's/\r//' /entrypoint.sh && chmod 755 /entrypoint.sh
 
 ENTRYPOINT ["/entrypoint.sh"]
 CMD ["bash"]
+# OCI metadata for traceability of versioned build images
+LABEL org.opencontainers.image.source="https://github.com/uoohyo/docker-ccstudio-ide"
+LABEL org.opencontainers.image.documentation="https://github.com/uoohyo/docker-ccstudio-ide#readme"
+
