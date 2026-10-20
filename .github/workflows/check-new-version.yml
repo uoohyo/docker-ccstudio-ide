@@ -103,7 +103,7 @@ jobs:
 
           # Find publicly downloadable versions that exist on TI but not on Docker Hub
           MISSING=$(echo "$TI_VERSIONS" | jq --argjson hub "$HUB_TAGS" '
-            map(select(.public_download == true)) |
+            map(select(.public_download == true and (.major | tonumber) >= 7)) |
             map(select(.version as $v | $hub | index($v) | not))
           ')
 
