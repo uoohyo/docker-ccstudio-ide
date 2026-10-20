@@ -7,7 +7,6 @@ on:
       - 'Dockerfile'
       - 'entrypoint.sh'
       - '.github/scripts/**'
-      - '.github/workflows/build-all-versions.yml'
   workflow_dispatch:
     inputs:
       versions:
@@ -55,7 +54,7 @@ jobs:
           { echo "versions<<${DELIMITER}"; echo "${VERSIONS}"; echo "${DELIMITER}"; } >> $GITHUB_OUTPUT
 
           # Publicly downloadable versions only (for the build matrix), sorted oldest-first
-          ALL_BUILD_VERSIONS=$(echo "$VERSIONS" | jq '[.[] | select(.public_download == true)] | sort_by([.major, .minor, .patch, .build] | map(tonumber))')
+          ALL_BUILD_VERSIONS=$(echo "$VERSIONS" | jq '[.[] | select(.public_download == true and (.major | tonumber) >= 7)] | sort_by([.major, .minor, .patch, .build] | map(tonumber))')
 
           # Filter out already-built versions unless force_rebuild is requested
           if [ "${{ github.event.inputs.force_rebuild }}" = "true" ]; then
@@ -63,18 +62,17 @@ jobs:
             echo "force_rebuild=true: building all $(echo "$BUILD_VERSIONS" | jq '. | length') versions"
           else
             echo "Checking Docker Hub for existing tags..."
-            EXISTING_TAGS=""
-            PAGE=1
-            while true; do
-              RESPONSE=$(curl -s "https://hub.docker.com/v2/repositories/uoohyo/ccstudio-ide/tags?page=${PAGE}&page_size=100")
-              TAGS=$(echo "$RESPONSE" | jq -r '.results[].name' | grep -E '^[0-9]+\.[0-9]+\.[0-9]+(\.[0-9]+)?$' || true)
-              [ -z "$TAGS" ] && break
-              EXISTING_TAGS="${EXISTING_TAGS}${TAGS}"$'\n'
-              NEXT=$(echo "$RESPONSE" | jq -r '.next')
-              [ "$NEXT" = "null" ] && break
-              PAGE=$((PAGE + 1))
+            TAGS_FILE=$(mktemp)
+            NEXT_URL="https://hub.docker.com/v2/repositories/uoohyo/ccstudio-ide/tags?page_size=100"
+            while [ -n "$NEXT_URL" ]; do
+              RESPONSE=$(curl -fsSL --retry 3 --retry-delay 2 "$NEXT_URL")
+              printf '%s' "$RESPONSE" | jq -e '.results | type == "array"' > /dev/null
+              printf '%s' "$RESPONSE" | jq -r '.results[].name' \
+                | grep -E '^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$' >> "$TAGS_FILE" || true
+              NEXT_URL=$(printf '%s' "$RESPONSE" | jq -r '.next // empty')
             done
-            TAGS_JSON=$(echo "$EXISTING_TAGS" | grep -v '^$' | jq -R . | jq -s . || echo '[]')
+            TAGS_JSON=$(sort -u "$TAGS_FILE" | jq -R -s -c 'split("\n") | map(select(length > 0))')
+            rm -f "$TAGS_FILE"
             echo "Found $(echo "$TAGS_JSON" | jq '. | length') existing Docker Hub tags"
 
             # Keep only versions not yet on Docker Hub
