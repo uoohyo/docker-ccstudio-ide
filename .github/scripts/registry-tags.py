@@ -45,6 +45,7 @@ def fetch_json(url):
 
 if __name__ == "__main__":
     try:
-        print(registry_versions(sys.argv[1], int(sys.argv[2]))[-1])
+        versions = registry_versions(sys.argv[1], int(sys.argv[2]))
+        print(json.dumps(versions) if "--all" in sys.argv[3:] else versions[-1])
     except Exception as error:
         sys.exit(f"Registry lookup failed: {error}")

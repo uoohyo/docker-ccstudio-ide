@@ -10,7 +10,9 @@ Use `push_to_registry=false` for a selected-version diagnostic build. This still
 
 Automatic discovery continues to skip existing toolchain tags. Explicit rebuild controls are not proof that a source fix reached an existing image. Record the source revision and digest for every release, and do not mark an issue deployed until the intended version has been rebuilt and verified.
 
-The maintainer is considering updating existing version tags for source/dependency fixes. This PR does not introduce a new revision-tag naming scheme or change the component-selectable installation model. Before an actual release, confirm the rebuild scope and whether existing tags may be updated. No existing tag was changed while developing this PR.
+The maintainer selected updates to currently published version tags rather than a new additive tag scheme. Use `existing_versions_only=true` to intersect selected/discovered toolchains with the complete registry inventory; this excludes unpublished versions such as STM32CubeCLT 1.22.0. Start with a small explicit version selection, verify its pull/sample checks, then expand the batch.
+
+Before overwriting an existing image, the publication script records its previous registry digest and the tested proposed image ID in a rollback ledger. A failed lookup prevents the push. The ledger is retained separately even if publication or verification fails; successful receipts record the new digest/source revision. A rollback should restore the recorded digest after confirming the exact target; it must not rebuild old source and assume equivalence. Existing component-selectable runtime installation remains unchanged. No image was deployed while developing this PR.
 
 ## Verification still required before release
 

@@ -42,6 +42,7 @@ if [ "$1" = image ]; then
   if [[ "$*" == *RepoDigests* ]]; then echo '["test/image@sha256:manifest"]';
   elif [[ "$*" == *@sha256:* && "${MISMATCH:-}" == true ]]; then echo sha256:other;
   else echo sha256:tested; fi
+elif [ "$1" = buildx ]; then printf '{"digest":"sha256:%064d"}\\n' 2
 elif [ "$1" = push ] || [ "$1" = pull ]; then :
 else exit 99; fi
 """)
@@ -51,6 +52,28 @@ else exit 99; fi
                 result = subprocess.run(["bash", str(ROOT / ".github/scripts/publish-tested-image.sh"), "test/image:1.0.0", str(receipt)], env=env, capture_output=True)
                 self.assertEqual(result.returncode == 0, not mismatch, result.stderr.decode())
                 self.assertEqual(receipt.exists(), not mismatch)
+
+    def test_overwrite_requires_old_digest_and_retains_rollback(self):
+        for valid in (False, True):
+            with self.subTest(valid=valid), tempfile.TemporaryDirectory() as temp:
+                tmp = Path(temp)
+                docker = tmp / "docker"
+                docker.write_text("""#!/bin/bash
+if [ "$1" = buildx ]; then
+  [ "$VALID" = True ] || exit 7
+  printf '{"digest":"sha256:%064d"}\\n' 1
+elif [ "$1" = image ]; then
+  if [[ "$*" == *RepoDigests* ]]; then echo '["test/image@sha256:manifest"]'; else echo sha256:tested; fi
+elif [ "$1" = push ]; then touch pushed
+elif [ "$1" = pull ]; then :
+else exit 99; fi
+""")
+                docker.chmod(0o755)
+                env = dict(os.environ, PATH=str(tmp) + ":" + os.environ["PATH"], REQUIRE_EXISTING_IMAGE="true", VALID=str(valid))
+                result = subprocess.run(["bash", str(ROOT / ".github/scripts/publish-tested-image.sh"), "test/image:1.0.0", str(tmp / "receipt.json")], cwd=tmp, env=env, capture_output=True)
+                self.assertEqual(result.returncode == 0, valid, result.stderr.decode())
+                self.assertEqual((tmp / "pushed").exists(), valid)
+                self.assertEqual((tmp / "rollback/receipt.json").exists(), valid)
 
 
 class WorkflowTests(unittest.TestCase):
@@ -63,6 +86,9 @@ class WorkflowTests(unittest.TestCase):
         self.assertNotIn('BUILT_VERSION=', text)
         self.assertIn("push_to_registry != 'false'", text)
         self.assertIn("org.opencontainers.image.revision", text)
+        self.assertIn("existing_versions_only", text)
+        self.assertIn("($tags | index($v)) != null", text)
+        self.assertIn("Preserve rollback ledger even if publication fails", text)
 
 
 if __name__ == "__main__":

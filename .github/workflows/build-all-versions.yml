@@ -17,6 +17,10 @@ on:
         description: 'Publish tested images to Docker Hub'
         type: boolean
         default: true
+      existing_versions_only:
+        description: 'Rebuild only currently published versions; require a rollback digest before overwrite'
+        type: boolean
+        default: false
       force_rebuild:
         description: 'Force rebuild even if already on Docker Hub'
         type: boolean
@@ -61,7 +65,12 @@ jobs:
           ALL_BUILD_VERSIONS=$(echo "$VERSIONS" | jq '[.[] | select(.public_download == true and (.major | tonumber) >= 7)] | sort_by([.major, .minor, .patch, .build] | map(tonumber))')
 
           # Filter out already-built versions unless force_rebuild is requested
-          if [ "${{ github.event.inputs.force_rebuild }}" = "true" ]; then
+          if [ "${{ github.event.inputs.existing_versions_only }}" = "true" ]; then
+            EXISTING_TAGS=$(python3 .github/scripts/registry-tags.py uoohyo/ccstudio-ide 4 --all)
+            BUILD_VERSIONS=$(printf '%s' "$ALL_BUILD_VERSIONS" | jq -c --argjson tags "$EXISTING_TAGS" \
+              '[.[] | select(.version as $v | ($tags | index($v)) != null)]')
+            echo "Rebuilding existing versions only; undistributed versions are excluded"
+          elif [ "${{ github.event.inputs.force_rebuild }}" = "true" ]; then
             BUILD_VERSIONS="$ALL_BUILD_VERSIONS"
             echo "force_rebuild=true: building all $(echo "$BUILD_VERSIONS" | jq '. | length') versions"
           else
@@ -269,7 +278,18 @@ jobs:
 
       - name: Publish the tested image and verify its identity
         if: github.event.inputs.push_to_registry != 'false'
+        env:
+          REQUIRE_EXISTING_IMAGE: ${{ github.event.inputs.existing_versions_only }}
         run: bash .github/scripts/publish-tested-image.sh 'uoohyo/ccstudio-ide:${{ matrix.version_info.version }}' 'published/${{ matrix.version_info.version }}.json'
+
+      - name: Preserve rollback ledger even if publication fails
+        if: always() && github.event.inputs.existing_versions_only == 'true' && github.event.inputs.push_to_registry != 'false'
+        uses: actions/upload-artifact@v7
+        with:
+          name: rollback-${{ matrix.version_info.version }}
+          path: rollback/*.json
+          if-no-files-found: warn
+          retention-days: 90
 
       - name: Record successful publication
         if: github.event.inputs.push_to_registry != 'false'
