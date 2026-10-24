@@ -1,0 +1,67 @@
+name: Verify existing CCS 12.1 publication recovery
+
+# Validation only: this workflow cannot publish, rebuild, or restore any tag.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: toolchain-registry-${{ github.repository }}
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    if: github.repository == 'uoohyo/docker-ccstudio-ide' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - name: Read original run provenance
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const { data: run } = await github.rest.actions.getWorkflowRun({
+              owner: 'uoohyo', repo: 'docker-ccstudio-ide', run_id: 40126099529
+            });
+            if (run.id !== 40126099529 ||
+                run.head_sha !== 'f9e499f1901fef71cc4590f2d8ffed485fd7acc2' ||
+                run.repository.full_name !== 'uoohyo/docker-ccstudio-ide' ||
+                run.head_repository.full_name !== 'uoohyo/docker-ccstudio-ide' ||
+                run.path !== '.github/workflows/build-all-versions.yml' ||
+                run.event !== 'workflow_dispatch' || run.status !== 'completed') {
+              throw new Error('Original publication run provenance does not match');
+            }
+            const { data: artifact } = await github.rest.actions.getArtifact({
+              owner: 'uoohyo', repo: 'docker-ccstudio-ide', artifact_id: 12573379312
+            });
+            if (artifact.id !== 12573379312 || artifact.name !== 'rollback-12.1.0.00007' ||
+                artifact.expired || artifact.workflow_run.id !== run.id ||
+                artifact.workflow_run.head_sha !== run.head_sha) {
+              throw new Error('Original rollback artifact provenance does not match');
+            }
+            fs.writeFileSync('original-run.json', JSON.stringify(run, null, 2));
+            fs.writeFileSync('original-artifact.json', JSON.stringify(artifact, null, 2));
+      - name: Retrieve original rollback evidence without changing it
+        uses: actions/download-artifact@v8
+        with:
+          artifact-ids: '12573379312'
+          merge-multiple: true
+          path: original-rollback
+          run-id: '40126099529'
+          repository: uoohyo/docker-ccstudio-ide
+          github-token: ${{ github.token }}
+      - name: Verify already published digest and recover evidence
+        run: bash .github/scripts/verify-ccs-12-1-recovery.sh
+      - name: Preserve separate recovery receipt and original evidence
+        uses: actions/upload-artifact@v7
+        with:
+          name: recovery-12.1.0.00007-${{ github.run_id }}-${{ github.run_attempt }}
+          path: recovery/
+          if-no-files-found: error
+          retention-days: 90
