@@ -4,7 +4,7 @@
 
 Each version is built and tested independently. Its matrix job publishes the same local image only after its own tests pass. Publication records the image ID, repository digest, and source revision, and verifies a digest-qualified pull. Failed versions remain failed; they do not suppress successful siblings. `latest` requires at least one verified publication receipt and a complete, valid registry lookup. Merely discovered versions never become `latest` candidates.
 
-Use `push_to_registry=false` for a selected-version diagnostic build. This still downloads and installs vendor software; it is **not** an offline or license-free test. Local unit tests and the Validate release reliability workflow use fixtures and do not perform vendor installations or publish images.
+Image build/publication runs only through explicit dispatch; publication defaults to false. Automatic version discovery may request a build-only diagnostic, never a publication. Use `push_to_registry=false` for a selected-version diagnostic build. This still downloads and installs vendor software; it is **not** an offline or license-free test. Local unit tests and the Validate release reliability workflow use fixtures and do not perform vendor installations or publish images.
 
 ## Existing version updates
 
@@ -24,3 +24,7 @@ Before overwriting an existing image, the publication script records its previou
 ## Container restart contract
 
 A completion marker is written only after installer success, executable validation, and compatibility patches. Restarting the same container with the same version/components reuses that installation. Changing components/version, removing the executable, or losing the marker requires recreating the container. An executable left by an interrupted installation alone is not evidence of success. Components remain selectable on first startup; no preinstalled component bundle is imposed.
+
+## Rollback retention limits
+
+The ledger records original manifest metadata and digest before overwrite, and verifies that the old digest can be resolved. Registry retention after retagging is not guaranteed. The metadata artifact alone does not archive every old image layer; if the registry garbage-collects unreferenced blobs, it is not a complete offline recovery backup. Preserve an authorized full image backup when that stronger rollback guarantee is required.

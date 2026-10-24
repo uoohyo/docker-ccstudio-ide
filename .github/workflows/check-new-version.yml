@@ -135,7 +135,8 @@ jobs:
               workflow_id: 'build-all-versions.yml',
               ref: 'main',
               inputs: {
-                versions: JSON.stringify(missingVersions)
+                versions: JSON.stringify(missingVersions),
+                push_to_registry: 'false'
               }
             });
 
