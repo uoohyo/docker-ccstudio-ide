@@ -53,7 +53,7 @@ pulled_id=$(docker image inspect --format '{{.Id}}' "$repository_digest")
 # rollback digest is an acceptable stale value; an unrelated digest can indicate
 # another publisher and must fail closed. Verification failures never re-push.
 converged=false
-for attempt in 1 2 3 4 5 6; do
+for ((attempt=1; attempt<=25; attempt++)); do
     current_digest=$(docker buildx imagetools inspect "$image" --format '{{json .Manifest}}' | \
         jq -er '.digest | select(test("^sha256:[0-9a-f]{64}$"))')
     if [ "$current_digest" = "$published_digest" ]; then
@@ -64,8 +64,8 @@ for attempt in 1 2 3 4 5 6; do
         echo "Tag points to an unrelated digest after push; refusing a success receipt" >&2
         exit 1
     fi
-    echo "Tag still shows its rollback digest (verification ${attempt}/6)" >&2
-    if [ "$attempt" -lt 6 ]; then sleep 5; fi
+    echo "Tag still shows its rollback digest (verification ${attempt}/25)" >&2
+    if [ "$attempt" -lt 25 ]; then sleep 5; fi
 done
 [ "$converged" = true ] || { echo "Tag did not converge to the pushed digest; no receipt recorded" >&2; exit 1; }
 mkdir -p "$(dirname "$receipt")"

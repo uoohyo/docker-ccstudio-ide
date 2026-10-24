@@ -131,7 +131,7 @@ class PushDigestTests(unittest.TestCase):
                 self.assertEqual(state['pushes'], 1)
                 self.assertIsNone(receipt)
                 if mode == 'stale-forever':
-                    self.assertEqual(state['post_inspects'], 6)
+                    self.assertEqual(state['post_inspects'], 25)
                 elif mode == 'unrelated':
                     self.assertEqual(state['post_inspects'], 1)
 
