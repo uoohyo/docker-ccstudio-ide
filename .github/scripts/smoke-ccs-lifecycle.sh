@@ -34,20 +34,36 @@ test -s /opt/ti/.ccs-install-complete
 expected=$(printf '%s\n%s' "$version" "$components")
 test "$(cat /opt/ti/.ccs-install-complete)" = "$expected"
 test ! -d /opt/ccs-installer
+# Preserve the failing command's diagnostics as well as its exit status.
+# A bare output=$(...) under errexit exits before the captured text is printed.
+capture_cli() {
+    if output=$("$@" 2>&1); then
+        printf '%s\n' "$output"
+    else
+        status=$?
+        printf '%s\n' "$output" >&2
+        printf 'CCS smoke CLI failed with exit code %s\n' "$status" >&2
+        exit "$status"
+    fi
+}
+mkdir -p /tmp/ccs_verify
 if [ "$major" -ge 20 ]; then
-    mkdir -p /tmp/ccs_verify
     cd /opt/ti/ccs/eclipse
-    output=$(./ccs-server-cli.sh -noSplash -workspace /tmp/ccs_verify -application com.ti.ccs.apps.inspect -ccs.help 2>&1)
-    printf '%s\n' "$output"
+    capture_cli ./ccs-server-cli.sh -noSplash -workspace /tmp/ccs_verify \
+        -application com.ti.ccs.apps.inspect -ccs.help
     grep -q 'Usage:' <<< "$output"
-elif [ "$major" -ge 9 ]; then
-    output=$(/opt/ti/ccs/eclipse/eclipse -help 2>&1)
-    printf '%s\n' "$output"
-    grep -q 'Eclipse' <<< "$output"
 else
-    output=$("/opt/ti/ccsv${major}/eclipse/eclipse" -help 2>&1)
-    printf '%s\n' "$output"
-    grep -q 'Eclipse' <<< "$output"
+    if [ "$major" -ge 9 ]; then
+        eclipse=/opt/ti/ccs/eclipse/eclipse
+    else
+        eclipse="/opt/ti/ccsv${major}/eclipse/eclipse"
+    fi
+    # Eclipse's bare -help invokes the graphical launcher on legacy releases.
+    # Use TI's headless application help instead (CCS v5 and later):
+    # https://software-dl.ti.com/ccs/esd/documents/ccs_projects-command-line.html
+    capture_cli "$eclipse" -noSplash -data /tmp/ccs_verify \
+        -application com.ti.ccstudio.apps.projectBuild -ccs.help
+    grep -Eq -- 'projectBuild|-ccs\.(projects|workspace|help)' <<< "$output"
 fi
 VALIDATION
 )

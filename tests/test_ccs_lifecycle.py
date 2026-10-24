@@ -82,8 +82,8 @@ class LifecycleTests(unittest.TestCase):
     def test_payload_checks_cli_exit_even_with_success_text(self):
         source = SCRIPT.read_text()
         payload = source.split("cat <<'VALIDATION'\n", 1)[1].split('\nVALIDATION', 1)[0]
-        for major in [8, 12, 21]:
-            for exit_code in [0, 7]:
+        for major in [7, 8, 12, 21]:
+            for exit_code in [0, 7, 13]:
                 with self.subTest(major=major, exit_code=exit_code), tempfile.TemporaryDirectory() as temp:
                     work = Path(temp)
                     ti = work / 'ti'
@@ -92,11 +92,27 @@ class LifecycleTests(unittest.TestCase):
                     version = f'{major}.0.0.00001'
                     (ti / '.ccs-install-complete').write_text(version+'\nPF_C28\n')
                     executable = eclipse / ('ccs-server-cli.sh' if major >= 20 else 'eclipse')
-                    executable.write_text(f"#!/bin/bash\necho 'Usage: Eclipse'\nexit {exit_code}\n")
+                    executable.write_text(
+                        "#!/bin/bash\n"
+                        'printf "%s\\n" "$@" > "${CLI_ARGS_FILE:?}"\n'
+                        "echo 'Usage: com.ti.ccstudio.apps.projectBuild -ccs.projects -ccs.help'\n"
+                        "echo 'diagnostic fixture on stderr' >&2\n"
+                        f"exit {exit_code}\n"
+                    )
                     executable.chmod(0o755)
                     script = payload.replace('/opt/ti', str(ti)).replace('/opt/ccs-installer', str(work / 'removed-installer')).replace('/tmp/ccs_verify', str(work / 'verify'))
-                    result = subprocess.run(['bash', '-euo', 'pipefail', '-c', script, '--', version, str(major), 'PF_C28'], capture_output=True, text=True)
+                    args_file = work / 'cli-args.txt'
+                    result = subprocess.run(['bash', '-euo', 'pipefail', '-c', script, '--', version, str(major), 'PF_C28'], env=dict(os.environ, CLI_ARGS_FILE=str(args_file)), capture_output=True, text=True)
                     self.assertEqual(result.returncode, exit_code)
+                    expected_application = 'com.ti.ccs.apps.inspect' if major >= 20 else 'com.ti.ccstudio.apps.projectBuild'
+                    expected_workspace_flag = '-workspace' if major >= 20 else '-data'
+                    self.assertEqual(args_file.read_text().splitlines(), ['-noSplash', expected_workspace_flag, str(work / 'verify'), '-application', expected_application, '-ccs.help'])
+                    self.assertNotIn('-help', args_file.read_text().splitlines())
+                    diagnostics = result.stderr if exit_code else result.stdout
+                    self.assertIn('Usage:', diagnostics)
+                    self.assertIn('diagnostic fixture on stderr', diagnostics)
+                    if exit_code:
+                        self.assertIn(f'CCS smoke CLI failed with exit code {exit_code}', result.stderr)
 
     def test_workflow_calls_lifecycle_before_publication(self):
         workflow = (ROOT / '.github/workflows/build-all-versions.yml').read_text()
