@@ -270,20 +270,24 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
+      - name: Prepare original release rollback metadata
+        if: github.event.inputs.existing_versions_only == 'true' && github.event.inputs.push_to_registry == 'true'
+        run: bash .github/scripts/prepare-image-rollback.sh 'uoohyo/ccstudio-ide:${{ matrix.version_info.version }}' 'published/${{ matrix.version_info.version }}.json'
+
+      - name: Persist rollback metadata before overwriting
+        if: github.event.inputs.existing_versions_only == 'true' && github.event.inputs.push_to_registry == 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          name: rollback-${{ matrix.version_info.version }}
+          path: rollback/*.json
+          if-no-files-found: error
+          retention-days: 90
+
       - name: Publish the tested image and verify its identity
         if: github.event_name == 'workflow_dispatch' && github.event.inputs.push_to_registry == 'true'
         env:
           REQUIRE_EXISTING_IMAGE: ${{ github.event.inputs.existing_versions_only }}
         run: bash .github/scripts/publish-tested-image.sh 'uoohyo/ccstudio-ide:${{ matrix.version_info.version }}' 'published/${{ matrix.version_info.version }}.json'
-
-      - name: Preserve rollback ledger even if publication fails
-        if: always() && github.event.inputs.existing_versions_only == 'true' && github.event.inputs.push_to_registry == 'true'
-        uses: actions/upload-artifact@v7
-        with:
-          name: rollback-${{ matrix.version_info.version }}
-          path: rollback/*.json
-          if-no-files-found: warn
-          retention-days: 90
 
       - name: Record successful publication
         if: github.event_name == 'workflow_dispatch' && github.event.inputs.push_to_registry == 'true'

@@ -70,6 +70,8 @@ else exit 99; fi
 """)
                 docker.chmod(0o755)
                 env = dict(os.environ, PATH=str(tmp) + ":" + os.environ["PATH"], REQUIRE_EXISTING_IMAGE="true", VALID=str(valid))
+                prepared = subprocess.run(["bash", str(ROOT / ".github/scripts/prepare-image-rollback.sh"), "test/image:1.0.0", str(tmp / "receipt.json")], cwd=tmp, env=env, capture_output=True)
+                self.assertEqual(prepared.returncode == 0, valid, prepared.stderr.decode())
                 result = subprocess.run(["bash", str(ROOT / ".github/scripts/publish-tested-image.sh"), "test/image:1.0.0", str(tmp / "receipt.json")], cwd=tmp, env=env, capture_output=True)
                 self.assertEqual(result.returncode == 0, valid, result.stderr.decode())
                 self.assertEqual((tmp / "pushed").exists(), valid)
@@ -89,7 +91,8 @@ class WorkflowTests(unittest.TestCase):
         self.assertIn("org.opencontainers.image.revision", text)
         self.assertIn("existing_versions_only", text)
         self.assertIn("($tags | index($v)) != null", text)
-        self.assertIn("Preserve rollback ledger even if publication fails", text)
+        self.assertIn("Persist rollback metadata before overwriting", text)
+        self.assertLess(text.index("Persist rollback metadata before overwriting"), text.index("Publish the tested image"))
 
 
 if __name__ == "__main__":
