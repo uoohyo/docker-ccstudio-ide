@@ -90,6 +90,8 @@ class WorkflowTests(unittest.TestCase):
         self.assertNotIn("  push:\n", text.split("jobs:")[0])
         self.assertIn("org.opencontainers.image.revision", text)
         self.assertIn("existing_versions_only", text)
+        self.assertIn("group: toolchain-registry-${{ github.repository }}", text)
+        self.assertIn("cancel-in-progress: false", text)
         self.assertIn("($tags | index($v)) != null", text)
         self.assertIn("Persist rollback metadata before overwriting", text)
         self.assertLess(text.index("Persist rollback metadata before overwriting"), text.index("Publish the tested image"))

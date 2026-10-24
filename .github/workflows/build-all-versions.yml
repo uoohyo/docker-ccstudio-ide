@@ -20,6 +20,11 @@ on:
         type: boolean
         default: false
 
+# Serialize registry changes, including canary and subsequent overwrite batches.
+concurrency:
+  group: toolchain-registry-${{ github.repository }}
+  cancel-in-progress: false
+
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
