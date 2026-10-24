@@ -43,7 +43,8 @@ if [ "$1" = image ]; then
   elif [[ "$*" == *@sha256:* && "${MISMATCH:-}" == true ]]; then echo sha256:other;
   else echo sha256:tested; fi
 elif [ "$1" = buildx ]; then printf '{"digest":"sha256:%064d"}\\n' 2
-elif [ "$1" = push ] || [ "$1" = pull ]; then :
+elif [ "$1" = push ]; then printf '1.0.0: digest: sha256:%064d size: 1234\\n' 2
+elif [ "$1" = pull ]; then :
 else exit 99; fi
 """)
                 docker.chmod(0o755)
@@ -64,7 +65,7 @@ if [ "$1" = buildx ]; then
   printf '{"digest":"sha256:%064d"}\\n' 1
 elif [ "$1" = image ]; then
   if [[ "$*" == *RepoDigests* ]]; then echo '["test/image@sha256:manifest"]'; else echo sha256:tested; fi
-elif [ "$1" = push ]; then touch pushed
+elif [ "$1" = push ]; then touch pushed; printf '1.0.0: digest: sha256:%064d size: 1234\\n' 1
 elif [ "$1" = pull ]; then :
 else exit 99; fi
 """)
