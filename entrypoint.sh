@@ -1,5 +1,5 @@
 #!/bin/bash
-set -e
+set -e -o pipefail
 
 # Banner
 cat << 'EOF'
@@ -28,6 +28,29 @@ else
     CCS_ECLIPSE_DIR="/opt/ti/ccsv${MAJOR_VER}/eclipse"
 fi
 export PATH="${CCS_ECLIPSE_DIR}:${PATH}"
+
+# A completed installation is tied to its version and selected components.
+# Do not infer success from a leftover executable after an interrupted installer.
+INSTALL_STATE="/opt/ti/.ccs-install-complete"
+EXPECTED_STATE=$(printf '%s\n%s' "$VER" "${COMPONENTS}")
+if [ "${MAJOR_VER}" -ge 20 ]; then
+    CCS_EXECUTABLE="${CCS_ECLIPSE_DIR}/ccs-server-cli.sh"
+else
+    CCS_EXECUTABLE="${CCS_ECLIPSE_DIR}/eclipse"
+fi
+if [ -f "$INSTALL_STATE" ]; then
+    if [ "$(cat "$INSTALL_STATE")" != "$EXPECTED_STATE" ] || [ ! -x "$CCS_EXECUTABLE" ]; then
+        echo "[ERROR] Installed CCS version/components changed or installation is incomplete. Recreate the container." >&2
+        exit 1
+    fi
+    echo ">>> Reusing verified CCS ${VER} installation."
+    cd /home
+    exec "$@"
+fi
+if [ ! -d /opt/ccs-installer ]; then
+    echo "[ERROR] Installer is missing and no completed installation was recorded. Recreate the container." >&2
+    exit 1
+fi
 
 # Docker-specific stubs for installer compatibility
 # All versions need these due to udev/kernel interactions in installers
@@ -81,6 +104,7 @@ cleanup_xvfb() {
 
 # Trap to ensure Xvfb cleanup on exit
 trap cleanup_xvfb EXIT
+trap 'status=$?; echo "[ERROR] Installation failed (exit ${status}); completion marker was not written." >&2; exit "$status"' ERR
 
 # Create temporary directory for installation
 INSTALL_LOG="/tmp/ccs_install.log"
@@ -93,7 +117,7 @@ _show_install_logs() {
     cat "${INSTALL_LOG}" 2>/dev/null || echo "(no output captured)"
     echo ""
     echo "=== TI Installer Logs ==="
-    find /root/.ti /tmp /opt/ti -name "*.log" 2>/dev/null | while read -r f; do
+    (find /root/.ti /tmp /opt/ti -name "*.log" 2>/dev/null || true) | while read -r f; do
         echo "--- ${f} ---"
         cat "${f}"
     done
@@ -129,7 +153,7 @@ else
             --install-BlackHawk false --install-Segger false 2>&1 | tee "${INSTALL_LOG}"
     else
         echo ">>> Note: --enable-components is not supported for CCS v9 and below. Installing all components."
-        INSTALLER_BIN=$(find "/opt/ccs-installer/CCS${VER}_linux-x64" -maxdepth 1 \( -name "*.bin" -o -name "*.run" \) | sort | head -1)
+        INSTALLER_BIN=$(find "/opt/ccs-installer/CCS${VER}_linux-x64" -maxdepth 1 \( -name "*.bin" -o -name "*.run" \) | sort | sed -n '1p')
         # v7-v8: run with DISPLAY=:99 for Xvfb support and Java options
         if [ "${MAJOR_VER}" -le 8 ]; then
             export JAVA_TOOL_OPTIONS=-Xss1280k
@@ -183,7 +207,7 @@ if [ "${CCS_VERSION}" = "20.0.0.00012" ] || \
     ln -sf /opt/ti/ccs/eclipse/plugins /home/plugins
 
     # Fix 3: Add Node.js to system PATH
-    NODE_PATH=$(find /opt/ti/ccs -name node -type f -executable 2>/dev/null | head -1)
+    NODE_PATH=$(find /opt/ti/ccs -name node -type f -executable 2>/dev/null | sed -n '1p')
     if [ -n "$NODE_PATH" ]; then
         ln -sf "$NODE_PATH" /usr/local/bin/node
         echo "  Node.js: $($NODE_PATH --version) -> /usr/local/bin/node"
@@ -191,6 +215,11 @@ if [ "${CCS_VERSION}" = "20.0.0.00012" ] || \
 
     echo ">>> CCS v20.0.x patches applied successfully (issue #16)"
 fi
+
+# Record success only after executable verification and compatibility patches.
+# Atomic replacement means interrupted installations are never marked complete.
+printf '%s\n' "$EXPECTED_STATE" > "${INSTALL_STATE}.tmp"
+mv "${INSTALL_STATE}.tmp" "$INSTALL_STATE"
 
 # Cleanup
 echo ">>> Cleaning up..."
